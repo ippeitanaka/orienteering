@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 50% 98%;
+    --foreground: 210 40% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 20%;
+
+    --primary: 210 90% 60%;
+    --primary-foreground: 210 10% 98%;
+
+    --secondary: 150 60% 60%;
+    --secondary-foreground: 150 10% 98%;
+
+    --muted: 210 20% 92%;
+    --muted-foreground: 210 40% 45%;
+
+    --accent: 35 90% 70%;
+    --accent-foreground: 35 30% 25%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 210 90% 60%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 210 30% 10%;
+    --foreground: 210 10% 95%;
+
+    --card: 210 30% 12%;
+    --card-foreground: 210 10% 95%;
+
+    --popover: 210 30% 12%;
+    --popover-foreground: 210 10% 95%;
+
+    --primary: 210 70% 60%;
+    --primary-foreground: 210 10% 98%;
+
+    --secondary: 150 50% 40%;
+    --secondary-foreground: 150 10% 95%;
+
+    --muted: 210 30% 20%;
+    --muted-foreground: 210 10% 70%;
+
+    --accent: 35 50% 50%;
+    --accent-foreground: 35 10% 95%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 30% 25%;
+    --input: 210 30% 25%;
+    --ring: 210 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "palt" 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+/* カスタムコンポーネントスタイルの改良 */
+@layer components {
+  .cute-card {
+    @apply rounded-xl border border-primary/20 bg-white/90 shadow-lg transition-all hover:shadow-xl backdrop-blur-sm;
+  }
+
+  .cute-button {
+    @apply rounded-lg bg-primary text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95;
+  }
+
+  .cute-input {
+    @apply rounded-lg border-2 border-primary/30 bg-white/90 px-4 py-2 shadow-inner focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+
+  .cute-badge {
+    @apply rounded-full bg-accent/90 px-3 py-1 text-xs font-medium text-accent-foreground shadow-sm;
+  }
+
+  .cute-container {
+    @apply mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
+  }
+
+  /* 新しいスタイル追加 */
+  .glass-panel {
+    @apply bg-white/75 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-primary/10;
+  }
+
+  .nav-item-active {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+}
+
+/* アニメーション付きの背景 - より洗練されたデザインに */
+.cute-bg {
+  background-image: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(249, 115, 22, 0.1) 0%, transparent 50%);
+  background-size: 100% 100%;
+  animation: bg-shift 20s ease infinite;
+}
+
+@keyframes bg-shift {
+  0%,
+  100% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 10% 20%;
+  }
+  50% {
+    background-position: 5% 10%;
+  }
+  75% {
+    background-position: 15% 5%;
+  }
+}
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.4);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+}
+
+/* Leaflet関連のスタイル改善 */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Leafletのポップアップスタイル */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.leaflet-popup-content {
+  margin: 0.85rem;
+  font-family: var(--font-inter), var(--font-noto), sans-serif;
+}
+
+/* チームマーカーのスタイル改善 */
+.custom-team-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* 現在位置マーカーのスタイル改善 */
+.current-position-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+}
+
+/* チームラベルのスタイル改善 */
+.team-label {
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* マップコンテナのスタイル */
+#map-container {
+  background-color: #f0f8ff;
+  position: relative;
+  z-index: 1;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+/* ページトランジション用アニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* ロード状態のアニメーション */
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* 新しいカード用アニメーション */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.5s ease-out forwards;
+}
+
+/* スタガード表示用のディレイ */
+.delay-100 {
+  animation-delay: 0.1s;
+}
+.delay-200 {
+  animation-delay: 0.2s;
+}
+.delay-300 {
+  animation-delay: 0.3s;
+}
