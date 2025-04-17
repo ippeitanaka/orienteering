@@ -5,7 +5,7 @@ import { getCheckpoints, getTeamLocations, type Checkpoint, type Team, type Team
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, Locate } from 'lucide-react'
+import { AlertCircle, Locate } from "lucide-react"
 import Script from "next/script"
 
 interface OSMMapViewProps {
@@ -73,12 +73,16 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
   const initializeMap = () => {
     try {
       if (!window.L || !mapContainerRef.current || mapRef.current) {
-        setDebugInfo(prev => prev + "\nマップ初期化条件が満たされていません: " + 
-          `window.L=${!!window.L}, mapContainer=${!!mapContainerRef.current}, mapRef=${!!mapRef.current}`)
+        setDebugInfo(
+          (prev) =>
+            prev +
+            "\nマップ初期化条件が満たされていません: " +
+            `window.L=${!!window.L}, mapContainer=${!!mapContainerRef.current}, mapRef=${!!mapRef.current}`,
+        )
         return
       }
 
-      setDebugInfo(prev => prev + "\nマップを初期化しています...")
+      setDebugInfo((prev) => prev + "\nマップを初期化しています...")
 
       // マップの中心位置を計算
       const center = getMapCenter()
@@ -86,7 +90,9 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
 
       // マップコンテナのスタイルを確認
       const containerStyle = window.getComputedStyle(mapContainerRef.current)
-      setDebugInfo(prev => prev + `\nマップコンテナのスタイル: width=${containerStyle.width}, height=${containerStyle.height}`)
+      setDebugInfo(
+        (prev) => prev + `\nマップコンテナのスタイル: width=${containerStyle.width}, height=${containerStyle.height}`,
+      )
 
       // マップを初期化
       mapRef.current = window.L.map(mapContainerRef.current).setView(center, zoom)
@@ -98,7 +104,7 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
       }).addTo(mapRef.current)
 
       setMapInitialized(true)
-      setDebugInfo(prev => prev + "\nマップが初期化されました")
+      setDebugInfo((prev) => prev + "\nマップが初期化されました")
 
       // マーカーを追加
       updateCheckpointMarkers()
@@ -109,7 +115,7 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
     } catch (err) {
       console.error("Error initializing map:", err)
       setError(`地図の初期化に失敗しました: ${err instanceof Error ? err.message : String(err)}`)
-      setDebugInfo(prev => prev + `\nマップ初期化エラー: ${err instanceof Error ? err.message : String(err)}`)
+      setDebugInfo((prev) => prev + `\nマップ初期化エラー: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -140,7 +146,9 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
       })
     } catch (err) {
       console.error("Error updating checkpoint markers:", err)
-      setDebugInfo(prev => prev + `\nチェックポイントマーカー更新エラー: ${err instanceof Error ? err.message : String(err)}`)
+      setDebugInfo(
+        (prev) => prev + `\nチェックポイントマーカー更新エラー: ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
   }
 
@@ -155,10 +163,21 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
 
         // カスタムアイコンを作成
         const icon = window.L.divIcon({
-          className: "custom-team-marker",
-          html: `<div style="background-color: ${team.color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8],
+          className: "team-marker",
+          html: `
+    <div style="
+      background-color: ${team.color}; 
+      width: 18px; 
+      height: 18px; 
+      border-radius: 50%; 
+      border: 3px solid white; 
+      box-shadow: 0 0 6px rgba(0,0,0,0.5), inset 0 0 2px rgba(255,255,255,0.5);
+      transform-origin: center;
+      animation: pulse 2s infinite ease-in-out;
+    "></div>
+  `,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
         })
 
         const marker = window.L.marker([location.latitude, location.longitude], { icon })
@@ -177,7 +196,7 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
       })
     } catch (err) {
       console.error("Error updating team markers:", err)
-      setDebugInfo(prev => prev + `\nチームマーカー更新エラー: ${err instanceof Error ? err.message : String(err)}`)
+      setDebugInfo((prev) => prev + `\nチームマーカー更新エラー: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -243,7 +262,7 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
         .bindPopup("<div><strong>現在地</strong></div>")
     } catch (err) {
       console.error("Error updating current position marker:", err)
-      setDebugInfo(prev => prev + `\n現在位置マーカー更新エラー: ${err instanceof Error ? err.message : String(err)}`)
+      setDebugInfo((prev) => prev + `\n現在位置マーカー更新エラー: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -332,12 +351,7 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
               </div>
             </div>
           ) : (
-            <div 
-              id="map" 
-              ref={mapContainerRef} 
-              className="h-full w-full" 
-              style={{ height: "100%", width: "100%" }}
-            />
+            <div id="map" ref={mapContainerRef} className="h-full w-full" style={{ height: "100%", width: "100%" }} />
           )}
         </div>
 

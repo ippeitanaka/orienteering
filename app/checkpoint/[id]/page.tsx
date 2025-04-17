@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircle, AlertCircle } from "lucide-react"
-import { supabase, checkInTeam } from "@/lib/supabase"
+import { checkInTeam } from "@/lib/supabase"
 
 export default function CheckpointPage({ params }: { params: { id: string } }) {
   const [checkpoint, setCheckpoint] = useState<any>(null)
@@ -29,38 +29,34 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
     async function fetchData() {
       try {
         // チェックポイント情報を取得
-        const { data: checkpointData, error: checkpointError } = await supabase
-          .from("checkpoints")
-          .select("*")
-          .eq("id", params.id)
-          .single()
+        const checkpointResponse = await fetch(`/api/checkpoints/${params.id}`)
 
-        if (checkpointError || !checkpointData) {
-          console.error("Failed to fetch checkpoint:", checkpointError)
+        if (!checkpointResponse.ok) {
+          console.error("Failed to fetch checkpoint")
           router.push("/dashboard")
           return
         }
 
-        setCheckpoint(checkpointData)
+        const checkpointData = await checkpointResponse.json()
+        setCheckpoint(checkpointData.data)
 
         // チーム情報を取得
-        const { data: teamData, error: teamError } = await supabase.from("teams").select("*").eq("id", teamId).single()
+        const teamResponse = await fetch(`/api/teams/${teamId}`)
 
-        if (teamError || !teamData) {
-          console.error("Failed to fetch team:", teamError)
+        if (!teamResponse.ok) {
+          console.error("Failed to fetch team")
           router.push("/")
           return
         }
 
-        setTeam(teamData)
+        const teamData = await teamResponse.json()
+        setTeam(teamData.data)
 
         // 既にチェックイン済みかチェック
-        const { data: existingCheckin } = await supabase
-          .from("checkins")
-          .select("*")
-          .eq("team_id", teamId)
-          .eq("checkpoint_id", params.id)
-          .single()
+        const checkinsResponse = await fetch(`/api/teams/${teamId}/checkins`)
+        const checkinsData = await checkinsResponse.json()
+
+        const existingCheckin = checkinsData.data.find((checkin: any) => checkin.checkpoint_id === Number(params.id))
 
         if (existingCheckin) {
           setAlreadyCheckedIn(true)
@@ -88,10 +84,11 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
       setAlreadyCheckedIn(true)
 
       // チーム情報を更新
-      const { data: updatedTeam } = await supabase.from("teams").select("*").eq("id", team.id).single()
+      const teamResponse = await fetch(`/api/teams/${team.id}`)
+      const teamData = await teamResponse.json()
 
-      if (updatedTeam) {
-        setTeam(updatedTeam)
+      if (teamData.data) {
+        setTeam(teamData.data)
       }
     }
   }

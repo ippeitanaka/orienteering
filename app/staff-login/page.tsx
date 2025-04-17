@@ -2,211 +2,121 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Home, LogIn } from "lucide-react"
-import { verifyStaff, supabase } from "@/lib/supabase"
+import { AlertCircle } from "lucide-react"
 
-export default function StaffLogin() {
-  const [name, setName] = useState("")
-  const [passcode, setPasscode] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [configError, setConfigError] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string>("")
+export default function StaffLoginPage() {
   const router = useRouter()
-
-  useEffect(() => {
-    // クライアントサイドで環境変数を直接確認
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    setConfigError(!supabaseUrl || !supabaseAnonKey)
-
-    // デバッグ情報
-    console.log("Client-side environment variables check:")
-    console.log("NEXT_PUBLIC_SUPABASE_URL exists:", !!supabaseUrl)
-    console.log("NEXT_PUBLIC_SUPABASE_ANON_KEY exists:", !!supabaseAnonKey)
-    console.log("NEXT_PUBLIC_SUPABASE_URL value:", supabaseUrl?.substring(0, 10) + "...")
-  }, [])
+  const [name, setName] = useState("ELT") // 開発用の初期値
+  const [passcode, setPasscode] = useState("toyo!") // 開発用の初期値
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setError("")
-    setDebugInfo("")
+    setError(null)
+    setDebugInfo(null)
 
     try {
-      // デバッグ情報を追加
-      console.log("Attempting login with:", { name, passcode })
+      console.log("Submitting staff login:", { name, passcode })
 
-      // テーブル構造を確認
-      if (supabase) {
-        try {
-          const { data: tables } = await supabase
-            .from("information_schema.tables")
-            .select("table_name")
-            .eq("table_schema", "public")
-          console.log("Available tables:", tables)
+      const response = await fetch("/api/staff/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, passcode }),
+      })
 
-          // staffテーブルのカラムを確認
-          const { data: columns } = await supabase
-            .from("information_schema.columns")
-            .select("column_name, data_type")
-            .eq("table_schema", "public")
-            .eq("table_name", "staff")
+      const data = await response.json()
+      console.log("Staff login response:", data)
 
-          console.log("Staff table columns:", columns)
-          setDebugInfo(`テーブル構造: ${JSON.stringify(columns)}`)
-        } catch (err) {
-          console.error("Error fetching schema:", err)
-        }
-      }
-
-      const staff = await verifyStaff(name, passcode)
-      console.log("Staff verification result:", staff)
-
-      if (staff) {
-        // スタッフ情報をローカルストレージに保存
-        localStorage.setItem("staffId", staff.id.toString())
+      if (data.success) {
+        // ログイン成功時の処理
+        localStorage.setItem("staffId", data.data.id)
+        localStorage.setItem("staffName", data.data.name || "Staff")
+        localStorage.setItem("staffCheckpointId", data.data.checkpoint_id || "")
         router.push("/staff-dashboard")
       } else {
-        setError("名前またはパスコードが正しくありません")
-        setDebugInfo(
-          (prevInfo) =>
-            prevInfo +
-            "\n\nスタッフ情報の検証に失敗しました。データベースにスタッフ情報が登録されているか確認してください。",
-        )
+        // エラー情報を表示
+        setError(data.error || "ログインに失敗しました")
+        setDebugInfo(data.debug || null)
       }
     } catch (err) {
-      console.error("Login error:", err)
-      setError("ログイン中にエラーが発生しました")
-      setDebugInfo(err instanceof Error ? err.message : String(err))
+      console.error("Error during staff login:", err)
+      setError("ログイン処理中にエラーが発生しました")
+      if (err instanceof Error) {
+        setDebugInfo({ message: err.message })
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGoHome = () => {
-    router.push("/")
-  }
-
   return (
-    <div className="min-h-screen cute-bg flex flex-col">
-      <header className="bg-primary/90 text-primary-foreground py-4 shadow-md relative">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-primary-foreground/10 flex items-center gap-1"
-          onClick={handleGoHome}
-        >
-          <Home className="h-4 w-4" />
-          <span>ホーム</span>
-        </Button>
-        <h1 className="text-2xl font-bold text-center font-heading">スタッフログイン</h1>
-      </header>
-
-      <main className="flex-1 container mx-auto px-4 py-8 flex items-center justify-center">
-        <Card className="w-full max-w-md cute-card border-primary/30 overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
-          <CardHeader>
-            <CardTitle className="text-center text-primary font-heading">スタッフログイン</CardTitle>
-            <CardDescription className="text-center">
-              スタッフ専用機能にアクセスするにはログインしてください
-            </CardDescription>
-          </CardHeader>
-
-          {configError && (
-            <div className="px-6">
-              <Alert variant="destructive" className="mb-4 rounded-xl">
+    <div className="container flex items-center justify-center min-h-screen py-8">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>スタッフログイン</CardTitle>
+          <CardDescription>スタッフ専用ページにアクセスするにはログインしてください</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>設定エラー</AlertTitle>
-                <AlertDescription>
-                  <p>Supabaseの環境変数が設定されていません。以下の環境変数を設定してください：</p>
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>NEXT_PUBLIC_SUPABASE_URL</li>
-                    <li>NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="font-medium">
-                  名前
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="cute-input"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="passcode" className="font-medium">
-                  パスコード
-                </Label>
-                <Input
-                  id="passcode"
-                  type="password"
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  required
-                  className="cute-input"
-                />
-              </div>
-              {error && <div className="text-destructive text-sm font-medium">{error}</div>}
-              {debugInfo && (
-                <Alert variant="default" className="mt-4 rounded-xl">
-                  <AlertTitle>デバッグ情報</AlertTitle>
-                  <AlertDescription>
-                    <p className="text-xs break-all whitespace-pre-wrap">{debugInfo}</p>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-            <CardFooter className="flex flex-col gap-2">
-              <Button type="submit" className="w-full cute-button" disabled={loading}>
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>
-                    ログイン中...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <LogIn className="h-4 w-4" />
-                    ログイン
-                  </span>
+                <AlertTitle>エラー</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+                {debugInfo && (
+                  <details className="mt-2 text-xs">
+                    <summary>デバッグ情報</summary>
+                    <pre className="mt-2 w-full max-h-40 overflow-auto bg-slate-950 text-slate-50 p-2 rounded text-xs">
+                      {JSON.stringify(debugInfo, null, 2)}
+                    </pre>
+                  </details>
                 )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full rounded-full border-primary/30 hover:bg-primary/10"
-                onClick={handleGoHome}
-              >
-                ホームに戻る
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </main>
+              </Alert>
+            )}
 
-      <footer className="bg-muted py-4">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} ELT学外オリエンテーション</p>
-        </div>
-      </footer>
+            <div className="space-y-2">
+              <Label htmlFor="name">スタッフ名</Label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="例: ELT Staff"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="passcode">パスワード</Label>
+              <Input
+                id="passcode"
+                type="password"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                placeholder="パスワードを入力"
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "ログイン中..." : "ログイン"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   )
 }

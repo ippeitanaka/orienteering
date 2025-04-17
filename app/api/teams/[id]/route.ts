@@ -1,70 +1,67 @@
 import { NextResponse } from "next/server"
-import { supabase, supabaseAdmin } from "@/lib/supabase"
+import { supabaseServer } from "@/lib/supabase-server"
 
-// チームを更新
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const id = params.id
-    const body = await request.json()
-    const { name, color } = body
-
-    if (!name && !color) {
-      return NextResponse.json({ error: "At least one field (name or color) is required" }, { status: 400 })
+    if (!supabaseServer) {
+      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
     }
 
-    const client = supabaseAdmin || supabase
+    const teamId = params.id
 
-    // 更新するフィールドを準備
-    const updateData: { name?: string; color?: string } = {}
-    if (name) updateData.name = name
-    if (color) updateData.color = color
-
-    // 更新操作を実行
-    const { error: updateError } = await client.from("teams").update(updateData).eq("id", id)
-
-    if (updateError) {
-      console.error("Error updating team:", updateError)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
-    }
-
-    // 更新後のデータを取得
-    const { data: updatedData, error: fetchError } = await client.from("teams").select("*").eq("id", id).single()
-
-    if (fetchError) {
-      console.error("Error fetching updated team:", fetchError)
-      return NextResponse.json({ error: fetchError.message }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      data: updatedData,
-      success: true,
-      message: "チームを更新しました",
-    })
-  } catch (error) {
-    console.error("Error in PUT /api/teams/[id]:", error)
-    return NextResponse.json({ error: "Failed to update team" }, { status: 500 })
-  }
-}
-
-// チームを削除
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const id = params.id
-    const client = supabaseAdmin || supabase
-
-    const { error } = await client.from("teams").delete().eq("id", id)
+    const { data, error } = await supabaseServer.from("teams").select("*").eq("id", teamId).single()
 
     if (error) {
-      console.error("Error deleting team:", error)
+      console.error("Error fetching team:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "チームを削除しました",
-    })
+    return NextResponse.json({ data })
   } catch (error) {
-    console.error("Error in DELETE /api/teams/[id]:", error)
-    return NextResponse.json({ error: "Failed to delete team" }, { status: 500 })
+    console.error("Error in GET /api/teams/[id]:", error)
+    return NextResponse.json({ error: "Failed to fetch team" }, { status: 500 })
+  }
+}
+
+// チーム更新用のPUTメソッドを修正
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  try {
+    if (!supabaseServer) {
+      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
+    }
+
+    const teamId = params.id
+    const body = await request.json()
+
+    // 更新可能なフィールドを制限（team_codeを含める）
+    const { name, color, team_code } = body
+    const updateData: Record<string, any> = {}
+
+    if (name !== undefined) updateData.name = name
+    if (color !== undefined) updateData.color = color
+    if (team_code !== undefined) updateData.team_code = team_code
+
+    // データが空の場合はエラー
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
+    }
+
+    console.log(`Updating team ${teamId} with data:`, updateData)
+
+    const { data, error } = await supabaseServer.from("teams").update(updateData).eq("id", teamId).select()
+
+    if (error) {
+      console.error("Error updating team:", error)
+      return NextResponse.json({ error: error.message, success: false }, { status: 500 })
+    }
+
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: "Team not found", success: false }, { status: 404 })
+    }
+
+    return NextResponse.json({ data: data[0], success: true, message: "チームを更新しました" })
+  } catch (error) {
+    console.error("Error in PUT /api/teams/[id]:", error)
+    return NextResponse.json({ error: "Failed to update team", success: false }, { status: 500 })
   }
 }

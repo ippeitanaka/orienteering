@@ -80,7 +80,7 @@ export default function QRScanner() {
   }
 
   return (
-    <Card className="glass-panel border-primary/20 shadow-lg slide-in">
+    <Card className="border-primary/20 shadow-lg slide-in bg-white/90 backdrop-blur-sm rounded-xl">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2">
           <QrCode className="h-5 w-5 text-primary" />

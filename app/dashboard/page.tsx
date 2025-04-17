@@ -36,6 +36,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [mapLoadFailed, setMapLoadFailed] = useState(false)
   const [mapLoadAttempts, setMapLoadAttempts] = useState(0)
+  const [mapKey, setMapKey] = useState(0) // マップの強制再レンダリング用のキー
 
   useEffect(() => {
     // クライアントサイドでのみ実行されるコードをここに記述
@@ -85,6 +86,12 @@ export default function Dashboard() {
   const handleRetryMapLoad = () => {
     setMapLoadFailed(false)
     setMapLoadAttempts((prev) => prev + 1)
+  }
+
+  // 位置情報が更新されたときにマップを更新
+  const handleLocationUpdate = () => {
+    // マップを強制的に再レンダリング
+    setMapKey((prev) => prev + 1)
   }
 
   // サーバーサイドレンダリング時は最小限の内容を表示
@@ -176,8 +183,10 @@ export default function Dashboard() {
           <Card className="glass-panel max-w-md mx-auto border-primary/30 shadow-lg slide-in">
             <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
             <CardHeader>
-              <CardTitle className="text-center text-primary font-heading text-2xl">チームを選択</CardTitle>
-              <CardDescription className="text-center text-lg mt-2">参加するチームを選んでください</CardDescription>
+              <CardTitle className="text-center text-primary font-heading text-2xl">チームログイン</CardTitle>
+              <CardDescription className="text-center text-lg mt-2">
+                スタッフから提供されたチームコードを入力してください
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <TeamSelector teams={teams} onSelect={handleTeamSelect} />
@@ -185,10 +194,10 @@ export default function Dashboard() {
           </Card>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between bg-white/70 backdrop-blur-sm p-4 rounded-xl shadow-sm slide-in">
+            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm slide-in">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-6 h-6 rounded-full shadow-inner"
+                  className="w-6 h-6 rounded-full shadow-sm border border-white/50"
                   style={{ backgroundColor: selectedTeam.color }}
                 ></div>
                 <h2 className="text-xl font-heading">{selectedTeam.name}</h2>
@@ -212,25 +221,16 @@ export default function Dashboard() {
             <Card className="glass-panel border-primary/30 overflow-hidden shadow-lg slide-in delay-100">
               <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-3 gap-3 p-3 bg-muted/40 mx-3 mt-3 rounded-xl">
-                  <TabsTrigger
-                    value="map"
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl flex items-center gap-2 h-12"
-                  >
+                <TabsList className="grid grid-cols-3 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-xl">
+                  <TabsTrigger value="map" className="custom-tab flex items-center gap-2 h-12">
                     <Map className="h-5 w-5" />
                     マップ
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="qr"
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl flex items-center gap-2 h-12"
-                  >
+                  <TabsTrigger value="qr" className="custom-tab flex items-center gap-2 h-12">
                     <QrCode className="h-5 w-5" />
                     QRスキャン
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="score"
-                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl flex items-center gap-2 h-12"
-                  >
+                  <TabsTrigger value="score" className="custom-tab flex items-center gap-2 h-12">
                     <Trophy className="h-5 w-5" />
                     スコア
                   </TabsTrigger>
@@ -241,10 +241,14 @@ export default function Dashboard() {
                     {mapLoadFailed ? (
                       <SimpleFallbackMap teams={teams} onRetry={handleRetryMapLoad} />
                     ) : (
-                      <BasicMap key={`map-attempt-${mapLoadAttempts}`} teams={teams} onError={handleMapLoadError} />
+                      <BasicMap
+                        key={`map-attempt-${mapLoadAttempts}-update-${mapKey}`}
+                        teams={teams}
+                        onError={handleMapLoadError}
+                      />
                     )}
                     <div className="mt-4">
-                      <LocationTracker />
+                      <LocationTracker onLocationUpdate={handleLocationUpdate} />
                     </div>
                   </div>
                 </TabsContent>

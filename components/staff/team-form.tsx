@@ -21,6 +21,7 @@ interface TeamFormProps {
 export default function TeamForm({ team, onSuccess, onCancel }: TeamFormProps) {
   const [name, setName] = useState(team?.name || "")
   const [color, setColor] = useState(team?.color || "#FF5252")
+  const [teamCode, setTeamCode] = useState(team?.team_code || (team ? team.id.toString() : ""))
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<{ success?: boolean; message?: string } | null>(null)
 
@@ -41,7 +42,7 @@ export default function TeamForm({ team, onSuccess, onCancel }: TeamFormProps) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name, color }),
+          body: JSON.stringify({ name, color, team_code: teamCode }),
         })
       } else {
         // チーム作成APIを呼び出し
@@ -50,13 +51,13 @@ export default function TeamForm({ team, onSuccess, onCancel }: TeamFormProps) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ name, color }),
+          body: JSON.stringify({ name, color, team_code: teamCode }),
         })
       }
 
       const result = await response.json()
 
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         setStatus({
           success: false,
           message: result.error || "チームの保存に失敗しました",
@@ -85,6 +86,33 @@ export default function TeamForm({ team, onSuccess, onCancel }: TeamFormProps) {
     }
   }
 
+  const getTeamCodeDisplay = () => {
+    if (!isEditing || !team) return null
+
+    return (
+      <div className="space-y-2 mt-4 p-3 bg-muted rounded-lg">
+        <Label className="font-medium">システムID（変更不可）</Label>
+        <div className="flex items-center gap-2">
+          <div className="bg-background p-2 rounded font-mono text-lg">{team.id}</div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(team.id.toString())
+              alert("システムIDをコピーしました")
+            }}
+          >
+            コピー
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          これはシステム内部で使用されるIDです。チームコードとは異なります。
+        </p>
+      </div>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -104,6 +132,20 @@ export default function TeamForm({ team, onSuccess, onCancel }: TeamFormProps) {
               placeholder="例: レッドチーム"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="teamCode">チームコード</Label>
+            <Input
+              id="teamCode"
+              value={teamCode}
+              onChange={(e) => setTeamCode(e.target.value)}
+              placeholder="例: RED123"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              チームメンバーがログインに使用するコードです。わかりやすい値を設定してください。
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -133,6 +175,7 @@ export default function TeamForm({ team, onSuccess, onCancel }: TeamFormProps) {
             </p>
           </div>
 
+          {getTeamCodeDisplay()}
           {status && (
             <Alert variant={status.success ? "default" : "destructive"}>
               {status.success ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}

@@ -6,9 +6,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getContrastColor } from "@/lib/utils"
+import { Hash, LogIn } from "lucide-react"
 import type { Team } from "@/lib/supabase"
-import { Users, Hash, LogIn } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface TeamSelectorProps {
   teams: Team[]
@@ -18,73 +18,42 @@ interface TeamSelectorProps {
 export default function TeamSelector({ teams, onSelect }: TeamSelectorProps) {
   const [teamCode, setTeamCode] = useState("")
   const [error, setError] = useState("")
-  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null)
-
-  const handleTeamSelect = (team: Team) => {
-    setSelectedTeamId(team.id)
-    setTimeout(() => {
-      onSelect(team)
-    }, 300) // アニメーションに合わせて少し遅延
-  }
 
   const handleTeamCodeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const teamId = Number.parseInt(teamCode)
 
-    if (isNaN(teamId)) {
-      setError("有効なチームコードを入力してください。")
-      return
-    }
+    // 入力されたコードでチームを検索
+    // まず、team_codeフィールドで検索
+    let team = teams.find((t) => t.team_code === teamCode)
 
-    const team = teams.find((t) => t.id === teamId)
+    // 見つからなければ、IDで検索（後方互換性のため）
     if (!team) {
-      setError("チームが見つかりません。")
+      const teamId = Number.parseInt(teamCode)
+      if (!isNaN(teamId)) {
+        team = teams.find((t) => t.id === teamId)
+      }
+    }
+
+    if (!team) {
+      setError("チームが見つかりません。正しいチームコードを入力してください。")
       return
     }
 
-    handleTeamSelect(team)
+    onSelect(team)
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-5 w-5 text-primary" />
-          <h3 className="font-heading text-primary">チームを選択</h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          {teams.map((team) => (
-            <Button
-              key={team.id}
-              className={`h-20 flex flex-col items-center justify-center transition-all ${
-                selectedTeamId === team.id ? "animate-pop scale-105 shadow-lg" : "hover:scale-105"
-              }`}
-              style={{
-                backgroundColor: team.color,
-                color: getContrastColor(team.color),
-              }}
-              onClick={() => handleTeamSelect(team)}
-            >
-              <span className="font-bold text-lg">{team.name}</span>
-              <span className="text-xs opacity-80 mt-1">チームID: {team.id}</span>
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-muted"></div>
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">または</span>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <Alert className="bg-primary/10 border-primary/20">
+        <AlertDescription>
+          チームコードを入力してログインしてください。チームコードはスタッフから提供されます。
+        </AlertDescription>
+      </Alert>
 
       <form onSubmit={handleTeamCodeSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="teamCode" className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-muted-foreground" />
+            <Hash className="h-4 w-4 text-primary" />
             チームコード
           </Label>
           <Input

@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Home, LogOut, MapPin, Users, Award, QrCode } from "lucide-react"
+import { AlertCircle, Home, LogOut, MapPin, Users, Award, QrCode, RefreshCw } from "lucide-react"
 import { isSupabaseConfigured, getCheckpoints, type Team, type Checkpoint, type Staff } from "@/lib/supabase"
 import CheckpointForm from "@/components/staff/checkpoint-form"
 import TeamForm from "@/components/staff/team-form"
 import QRCodeDisplay from "@/components/staff/qr-code-display"
 import CheckinForm from "@/components/staff/checkin-form"
 import Scoreboard from "@/components/scoreboard"
+import { useToast } from "@/hooks/use-toast"
 
 export default function StaffDashboard() {
+  const { toast } = useToast()
   const [staff, setStaff] = useState<Staff | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
@@ -28,6 +30,8 @@ export default function StaffDashboard() {
   const [showAddTeam, setShowAddTeam] = useState(false)
   const [showEditTeam, setShowEditTeam] = useState(false)
   const [configError, setConfigError] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const router = useRouter()
 
   // チーム一覧を再読み込みする関数
@@ -44,11 +48,62 @@ export default function StaffDashboard() {
     }
   }
 
+  // スタッフ情報を取得する関数
+  const fetchStaffData = async (staffId: string) => {
+    try {
+      console.log(`Fetching staff with ID: ${staffId}`)
+      const response = await fetch(`/api/staff?id=${staffId}`)
+      const responseData = await response.json()
+
+      if (!response.ok) {
+        console.error("Failed to fetch staff:", responseData)
+        setDebugInfo(responseData)
+
+        if (responseData.error === "Staff not found") {
+          toast({
+            title: "スタッフ情報が見つかりません",
+            description: "デフォルトのスタッフアカウントを作成します",
+            variant: "warning",
+          })
+        }
+
+        throw new Error(`スタッフ情報の取得に失敗しました: ${responseData.error}`)
+      }
+
+      if (!responseData.data) {
+        console.error("No staff data returned:", responseData)
+        setDebugInfo(responseData)
+        throw new Error("スタッフ情報が見つかりません")
+      }
+
+      console.log("Staff data retrieved successfully:", responseData.data)
+      setStaff(responseData.data)
+
+      // 新しく作成されたスタッフの場合、通知を表示
+      if (responseData.message === "Created default staff record") {
+        toast({
+          title: "デフォルトのスタッフアカウントを作成しました",
+          description: "このアカウントは一時的なものです。適切な権限設定を行ってください。",
+          duration: 5000,
+        })
+      }
+
+      return responseData.data
+    } catch (err) {
+      console.error("Error fetching staff:", err)
+      throw err
+    }
+  }
+
   useEffect(() => {
-    const staffId = localStorage.getItem("staffId")
+    // ローカルストレージからスタッフIDを取得
+    let staffId = localStorage.getItem("staffId")
+
+    // スタッフIDがない場合は、緊急用のデフォルトIDを設定
     if (!staffId) {
-      router.push("/staff-login")
-      return
+      console.log("No staffId found in localStorage, using default ID 1")
+      staffId = "1"
+      localStorage.setItem("staffId", staffId)
     }
 
     // Supabaseが設定されているか確認
@@ -59,63 +114,55 @@ export default function StaffDashboard() {
       try {
         // スタッフ情報を取得
         if (supabaseConfigured) {
-          // 本番環境: Supabaseからデータを取得
           try {
-            const response = await fetch(`/api/staff?id=${staffId}`)
-            const responseData = await response.json()
+            const staffData = await fetchStaffData(staffId!)
 
-            if (!response.ok) {
-              console.error("Failed to fetch staff:", responseData.error)
-              setError(`スタッフ情報の取得に失敗しました: ${responseData.error}`)
-              setLoading(false)
-              return
+            // チーム情報を取得
+            await refreshTeams()
+
+            // チェックポイント情報を取得
+            try {
+              const checkpointsData = await getCheckpoints()
+              setCheckpoints(checkpointsData)
+
+              // スタッフに割り当てられたチェックポイントがあれば選択
+              if (staffData?.checkpoint_id) {
+                const assignedCheckpoint = checkpointsData.find((cp) => cp.id === staffData.checkpoint_id)
+                if (assignedCheckpoint) {
+                  setSelectedCheckpoint(assignedCheckpoint)
+                }
+              }
+            } catch (err) {
+              console.error("Error fetching checkpoints:", err)
+              // チェックポイント取得エラーは致命的ではないので、続行する
             }
-
-            if (!responseData.data) {
-              console.error("No staff data returned")
-              setError("スタッフ情報が見つかりません")
-              setLoading(false)
-              return
-            }
-
-            setStaff(responseData.data)
           } catch (err) {
-            console.error("Error fetching staff:", err)
-            setError("スタッフ情報の取得中にエラーが発生しました")
-            setLoading(false)
-            return
+            if (retryCount < 2) {
+              // 最大2回までリトライ
+              setRetryCount((prev) => prev + 1)
+              setError(`スタッフ情報の取得に失敗しました。リトライ中... (${retryCount + 1}/3)`)
+              setTimeout(() => {
+                fetchData() // 再試行
+              }, 1000)
+              return
+            }
+
+            setError(`スタッフ情報の取得に失敗しました。(${err instanceof Error ? err.message : String(err)})`)
           }
         } else {
           setError("Supabaseが設定されていません")
-          setLoading(false)
-          return
         }
-
-        // チーム情報を取得
-        await refreshTeams()
-
-        // チェックポイント情報を取得
-        const checkpointsData = await getCheckpoints()
-        setCheckpoints(checkpointsData)
-
-        // スタッフに割り当てられたチェックポイントがあれば選択
-        if (staff?.checkpoint_id) {
-          const assignedCheckpoint = checkpointsData.find((cp) => cp.id === staff.checkpoint_id)
-          if (assignedCheckpoint) {
-            setSelectedCheckpoint(assignedCheckpoint)
-          }
-        }
-
-        setLoading(false)
       } catch (err) {
         console.error("Error in staff dashboard:", err)
         setError("データの読み込み中にエラーが発生しました")
+        setDebugInfo(err)
+      } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, [router, staff?.checkpoint_id])
+  }, [router, toast])
 
   // スタッフのチェックポイントが変更された場合に選択チェックポイントを更新
   useEffect(() => {
@@ -181,6 +228,40 @@ export default function StaffDashboard() {
     }
   }
 
+  // 手動でデータを再読み込み
+  const handleRefreshData = async () => {
+    setLoading(true)
+    setError(null)
+    setDebugInfo(null)
+
+    try {
+      // スタッフIDを取得
+      const staffId = localStorage.getItem("staffId") || "1"
+
+      // スタッフ情報を再取得
+      await fetchStaffData(staffId)
+
+      // チーム情報を再取得
+      await refreshTeams()
+
+      // チェックポイント情報を再取得
+      const checkpointsData = await getCheckpoints()
+      setCheckpoints(checkpointsData)
+
+      toast({
+        title: "更新完了",
+        description: "データを最新の状態に更新しました",
+        duration: 3000,
+      })
+    } catch (err) {
+      console.error("Error refreshing data:", err)
+      setError("データの更新に失敗しました")
+      setDebugInfo(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen cute-bg flex items-center justify-center">
@@ -203,13 +284,40 @@ export default function StaffDashboard() {
             <AlertTitle>エラー</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-          <Button onClick={() => router.push("/staff-login")} className="mt-4 cute-button">
-            ログインページに戻る
-          </Button>
+
+          {/* デバッグ情報を表示 */}
+          {debugInfo && (
+            <div className="mt-4 p-4 bg-black/10 rounded-xl text-left max-w-md mx-auto overflow-auto max-h-60">
+              <p className="text-sm font-mono mb-2">デバッグ情報:</p>
+              <pre className="text-xs font-mono whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+            </div>
+          )}
+
+          <div className="mt-4 flex gap-2 justify-center">
+            <Button onClick={handleRefreshData} className="cute-button flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              再読み込み
+            </Button>
+            <Button onClick={() => router.push("/staff-login")} variant="outline">
+              ログインページに戻る
+            </Button>
+            <Button
+              onClick={() => {
+                localStorage.setItem("staffId", "1")
+                window.location.reload()
+              }}
+              variant="outline"
+            >
+              緊急アクセス
+            </Button>
+          </div>
         </div>
       </div>
     )
   }
+
+  // スタッフ情報がない場合でも、最低限の機能を提供
+  const staffName = staff?.name || "スタッフ（未認証）"
 
   return (
     <div className="min-h-screen cute-bg flex flex-col">
@@ -217,8 +325,18 @@ export default function StaffDashboard() {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold font-heading">スタッフダッシュボード</h1>
+            <span className="text-sm opacity-80">({staffName})</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-primary-foreground hover:bg-primary-foreground/10 flex items-center gap-1"
+              onClick={handleRefreshData}
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">更新</span>
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -388,9 +506,57 @@ export default function StaffDashboard() {
               <TabsContent value="teams" className="space-y-4">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold font-heading">チーム管理</h2>
-                  <Button onClick={() => setShowAddTeam(true)} className="cute-button">
-                    新規作成
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="bg-orange-50 border-orange-200 text-orange-600 hover:bg-orange-100"
+                      onClick={async () => {
+                        const confirmed = confirm("全チームの位置情報をリセットしますか？\nこの操作は取り消せません。")
+                        if (!confirmed) return
+
+                        try {
+                          const response = await fetch("/api/reset-team-locations", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                          })
+
+                          const result = await response.json()
+                          if (result.success) {
+                            toast({
+                              title: "成功",
+                              description: result.message,
+                              duration: 3000,
+                            })
+                            // チーム情報を再読み込み
+                            refreshTeams()
+                          } else {
+                            toast({
+                              title: "エラー",
+                              description: result.error || "操作に失敗しました",
+                              variant: "destructive",
+                              duration: 3000,
+                            })
+                          }
+                        } catch (error) {
+                          console.error("Error resetting team locations:", error)
+                          toast({
+                            title: "エラー",
+                            description: "位置情報のリセットに失敗しました",
+                            variant: "destructive",
+                            duration: 3000,
+                          })
+                        }
+                      }}
+                    >
+                      <MapPin className="h-4 w-4 mr-2" />
+                      位置情報リセット
+                    </Button>
+                    <Button onClick={() => setShowAddTeam(true)} className="cute-button">
+                      新規作成
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -402,7 +568,41 @@ export default function StaffDashboard() {
                           <div className="w-4 h-4 rounded-full" style={{ backgroundColor: team.color }}></div>
                           <CardTitle className="text-lg font-heading">{team.name}</CardTitle>
                         </div>
-                        <CardDescription className="text-xs">チームID: {team.id}</CardDescription>
+                        <CardDescription className="text-xs flex items-center gap-2">
+                          <span>チームコード:</span>
+                          <span className="font-mono bg-muted px-2 py-0.5 rounded">
+                            {team.team_code || team.id.toString()}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 p-0"
+                            onClick={() => {
+                              navigator.clipboard.writeText(team.team_code || team.id.toString())
+                              toast({
+                                title: "コピーしました",
+                                description: `チームコード ${team.team_code || team.id} をクリップボードにコピーしました`,
+                                duration: 2000,
+                              })
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="lucide lucide-copy"
+                            >
+                              <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                            </svg>
+                          </Button>
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4">
                         <p className="text-center text-2xl font-bold">{team.total_score} ポイント</p>
@@ -439,7 +639,7 @@ export default function StaffDashboard() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="scoreboard">
+              <TabsContent value="scoreboard" className="space-y-4">
                 <Scoreboard />
               </TabsContent>
             </Tabs>

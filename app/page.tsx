@@ -1,112 +1,188 @@
+"use client"
+
 import type React from "react"
-import Link from "next/link"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Users, Award, ArrowRight, Compass, Flag, Map } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { MapPin, QrCode, Trophy, Users, Info } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function Home() {
+  const [teamId, setTeamId] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
+  const { toast } = useToast()
+
+  // ローカルストレージからチームIDを取得
+  useEffect(() => {
+    const storedTeamId = localStorage.getItem("teamId")
+    if (storedTeamId) {
+      setTeamId(storedTeamId)
+    }
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    try {
+      // チームIDの検証
+      const response = await fetch(`/api/teams/${teamId}`)
+      const result = await response.json()
+
+      if (!response.ok || !result.data) {
+        setError("チームIDが正しくありません")
+        setLoading(false)
+        return
+      }
+
+      // チームIDをローカルストレージに保存
+      localStorage.setItem("teamId", teamId)
+      router.push("/dashboard")
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("ログイン中にエラーが発生しました")
+      setLoading(false)
+    }
+  }
+
+  const handleStaffLogin = () => {
+    router.push("/staff-login")
+  }
+
   return (
-    <div className="min-h-screen cute-bg">
-      <header className="bg-primary/90 text-primary-foreground py-8 shadow-md relative overflow-hidden">
-        <div className="container mx-auto px-4 relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-center tracking-tight">ELT学外オリエンテーション</h1>
-          <p className="text-center mt-3 text-lg opacity-90">みんなで楽しくオリエンテーリング！</p>
-          <div className="absolute -bottom-10 left-0 right-0 h-20 bg-gradient-to-t from-transparent to-primary/90 opacity-30"></div>
-        </div>
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
-          <div className="absolute top-5 left-10 animate-float">
-            <Compass className="w-20 h-20" />
-          </div>
-          <div className="absolute top-20 right-10 animate-bounce-slow">
-            <Flag className="w-16 h-16" />
-          </div>
-          <div className="absolute bottom-10 left-1/4 animate-pulse-soft">
-            <MapPin className="w-14 h-14" />
-          </div>
-          <div className="absolute bottom-20 right-1/4 animate-float" style={{ animationDelay: "1s" }}>
-            <Map className="w-16 h-16" />
-          </div>
-        </div>
+    <div className="min-h-screen cute-bg flex flex-col">
+      <header className="bg-primary/90 text-primary-foreground py-6 shadow-md relative">
+        <h1 className="text-3xl font-bold text-center font-heading">ELT学外オリエンテーション</h1>
+        <p className="text-center text-primary-foreground/80 mt-1">オリエンテーリングアプリ</p>
       </header>
 
-      <main className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <Card className="cute-card mb-12 border-primary/30 overflow-hidden slide-in">
+      <main className="flex-1 container mx-auto px-4 py-8 relative z-10">
+        <div className="max-w-md mx-auto space-y-6">
+          <Card className="cute-card border-primary/30 overflow-hidden">
             <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl md:text-4xl text-primary">ようこそ！</CardTitle>
-              <CardDescription className="text-lg mt-2">このアプリでオリエンテーリングに参加しましょう</CardDescription>
+            <CardHeader>
+              <CardTitle className="text-center text-primary font-heading">チームログイン</CardTitle>
+              <CardDescription className="text-center">
+                チームIDを入力してオリエンテーリングを開始しましょう
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <p className="text-center text-lg">
-                チームを選んで、チェックポイントを探しながら楽しく学外を探検しましょう！
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                <FeatureCard
-                  icon={<MapPin className="h-10 w-10 text-primary" />}
-                  title="チェックポイント"
-                  description="キャンパス内の様々な場所にあるチェックポイントを見つけよう"
-                  delay="delay-100"
-                />
-                <FeatureCard
-                  icon={<Users className="h-10 w-10 text-primary" />}
-                  title="チーム対抗"
-                  description="チームで協力して、より多くのポイントを獲得しよう"
-                  delay="delay-200"
-                />
-                <FeatureCard
-                  icon={<Award className="h-10 w-10 text-primary" />}
-                  title="ランキング"
-                  description="リアルタイムでスコアを確認して、順位を競おう"
-                  delay="delay-300"
-                />
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-center pb-8">
-              <Link href="/dashboard">
-                <Button className="cute-button px-8 py-6 text-lg group shadow-lg hover:shadow-glow">
-                  参加する
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+
+            <form onSubmit={handleSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="teamId" className="font-medium">
+                    チームID
+                  </Label>
+                  <Input
+                    id="teamId"
+                    type="text"
+                    value={teamId}
+                    onChange={(e) => setTeamId(e.target.value)}
+                    required
+                    className="cute-input"
+                    placeholder="チームIDを入力"
+                  />
+                </div>
+                {error && <div className="text-destructive text-sm font-medium">{error}</div>}
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full cute-button" disabled={loading}>
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></span>
+                      ログイン中...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      チームでログイン
+                    </span>
+                  )}
                 </Button>
-              </Link>
-            </CardFooter>
+              </CardFooter>
+            </form>
           </Card>
 
-          <div className="text-center mt-10 slide-in delay-300">
-            <Link href="/staff-login">
-              <Button variant="outline" className="rounded-lg border-primary/30 hover:bg-primary/10 px-6 py-5">
-                スタッフログイン
-              </Button>
-            </Link>
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="cute-card border-primary/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-heading flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  マップ機能
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  チームの現在位置とチェックポイントをリアルタイムで地図上に表示します。他のチームの位置も確認できます。
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="cute-card border-primary/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-heading flex items-center gap-2">
+                  <QrCode className="h-5 w-5 text-primary" />
+                  QRスキャン
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  チェックポイントに設置されたQRコードをスキャンして、ポイントを獲得しましょう。
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="cute-card border-primary/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg font-heading flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  スコアボード
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">リアルタイムで更新されるスコアボードで、チーム間の順位を確認できます。</p>
+              </CardContent>
+            </Card>
           </div>
+
+          <Alert className="bg-muted/50 border-primary/20">
+            <Info className="h-4 w-4" />
+            <AlertTitle>ヘルプ</AlertTitle>
+            <AlertDescription className="text-sm">
+              チームIDがわからない場合は、スタッフに確認してください。
+            </AlertDescription>
+          </Alert>
         </div>
       </main>
 
-      <footer className="bg-muted py-8 mt-12">
+      <footer className="bg-muted py-4 relative z-10">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground">© {new Date().getFullYear()} ELT学外オリエンテーション</p>
+          <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} ELT学外オリエンテーション</p>
+          <Button
+            variant="link"
+            size="sm"
+            className="text-muted-foreground hover:text-primary text-sm mt-1"
+            onClick={handleStaffLogin}
+          >
+            スタッフログイン
+          </Button>
         </div>
       </footer>
-    </div>
-  )
-}
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-  delay = "",
-}: {
-  icon: React.ReactNode
-  title: string
-  description: string
-  delay?: string
-}) {
-  return (
-    <div className={`glass-panel p-6 flex flex-col items-center text-center animate-float slide-in ${delay}`}>
-      <div className="mb-4 bg-primary/10 p-4 rounded-full">{icon}</div>
-      <h3 className="text-lg font-medium mb-3">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
+      {/* 装飾的な背景要素 */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[20%] right-[-10%] w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[30%] left-[-5%] w-72 h-72 bg-secondary/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-[60%] right-[10%] w-48 h-48 bg-primary/5 rounded-full blur-3xl"></div>
+      </div>
     </div>
   )
 }

@@ -86,8 +86,9 @@
 
 /* カスタムコンポーネントスタイルの改良 */
 @layer components {
+  /* カードのスタイルを改善 */
   .cute-card {
-    @apply rounded-xl border border-primary/20 bg-white/90 shadow-lg transition-all hover:shadow-xl backdrop-blur-sm;
+    @apply rounded-xl border border-primary/20 bg-white/90 shadow-lg transition-all hover:shadow-xl backdrop-blur-sm p-1 relative z-10;
   }
 
   .cute-button {
@@ -102,13 +103,14 @@
     @apply rounded-full bg-accent/90 px-3 py-1 text-xs font-medium text-accent-foreground shadow-sm;
   }
 
-  .cute-container {
-    @apply mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
+  /* コンテナのスタイルを改善 */
+  .content-container {
+    @apply relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8;
   }
 
   /* 新しいスタイル追加 */
   .glass-panel {
-    @apply bg-white/75 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg;
+    @apply bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg p-4;
   }
 
   .nav-item {
@@ -117,6 +119,34 @@
 
   .nav-item-active {
     @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  /* チームマーカーのスタイル改善 */
+  .team-marker {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  /* 現在位置マーカーのスタイル改善 */
+  .current-position-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
+  }
+
+  /* タブのスタイルを改善 */
+  .custom-tab {
+    @apply rounded-xl py-2 px-4 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground;
+  }
+
+  /* マーカーのスタイルを改善 */
+  .checkpoint-marker {
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+  }
+
+  /* 背景装飾用のスタイル */
+  .bg-decoration {
+    @apply absolute -z-10 rounded-full blur-xl opacity-60;
   }
 }
 
@@ -196,6 +226,37 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
+/* チームマーカーのパルスアニメーション */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
 /* 現在位置マーカーのスタイル改善 */
 .current-position-marker {
   display: flex;
@@ -207,7 +268,7 @@
 /* チームラベルのスタイル改善 */
 .team-label {
   pointer-events: none;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
 /* マップコンテナのスタイル */

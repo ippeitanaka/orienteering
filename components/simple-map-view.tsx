@@ -285,7 +285,13 @@ export default function SimpleMapView({ teams }: SimpleMapViewProps) {
                 return (
                   <li key={location.id} className="p-2 bg-muted rounded-md">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: team.color }}></div>
+                      <div
+                        className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                        style={{
+                          backgroundColor: team.color,
+                          boxShadow: `0 0 4px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.3)`,
+                        }}
+                      ></div>
                       <p className="font-medium">{team.name}</p>
                     </div>
                     <p className="text-xs text-muted-foreground">
