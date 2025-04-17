@@ -1,54 +1,54 @@
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
-import { supabaseServer } from "@/lib/supabase-server"
 
 // チェックポイント一覧を取得
 export async function GET() {
   try {
-    if (!supabaseServer) {
-      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
-    }
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    const { data, error } = await supabaseServer.from("checkpoints").select("*")
+    const { data: checkpoints, error } = await supabase.from("checkpoints").select("*").order("id")
 
     if (error) {
-      console.error("Error fetching checkpoints:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("チェックポイント取得エラー:", error)
+      return NextResponse.json({ error: "チェックポイントの取得に失敗しました" }, { status: 500 })
     }
 
-    return NextResponse.json({ data })
+    return NextResponse.json({ checkpoints })
   } catch (error) {
-    console.error("Error in GET /api/checkpoints:", error)
-    return NextResponse.json({ error: "Failed to fetch checkpoints" }, { status: 500 })
+    console.error("チェックポイント取得エラー:", error)
+    return NextResponse.json({ error: "サーバーエラーが発生しました" }, { status: 500 })
   }
 }
 
-// チェックポイントを作成
+// 新しいチェックポイントを作成
 export async function POST(request: Request) {
   try {
-    if (!supabaseServer) {
-      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
+    const requestData = await request.json()
+    const { name, latitude, longitude, points } = requestData
+
+    if (!name || latitude === undefined || longitude === undefined || points === undefined) {
+      return NextResponse.json({ error: "必須項目が不足しています" }, { status: 400 })
     }
 
-    const body = await request.json()
-    const { name, description, latitude, longitude, point_value } = body
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    if (!name || latitude === undefined || longitude === undefined) {
-      return NextResponse.json({ error: "Name, latitude and longitude are required" }, { status: 400 })
-    }
-
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabase
       .from("checkpoints")
-      .insert([{ name, description, latitude, longitude, point_value: point_value || 0 }])
+      .insert([{ name, latitude, longitude, points }])
       .select()
+      .single()
 
     if (error) {
-      console.error("Error creating checkpoint:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error("チェックポイント作成エラー:", error)
+      return NextResponse.json({ error: "チェックポイントの作成に失敗しました" }, { status: 500 })
     }
 
-    return NextResponse.json({ data: data[0], success: true, message: "チェックポイントを作成しました" })
+    return NextResponse.json({ success: true, checkpoint: data })
   } catch (error) {
-    console.error("Error in POST /api/checkpoints:", error)
-    return NextResponse.json({ error: "Failed to create checkpoint" }, { status: 500 })
+    console.error("チェックポイント作成エラー:", error)
+    return NextResponse.json({ error: "サーバーエラーが発生しました" }, { status: 500 })
   }
 }

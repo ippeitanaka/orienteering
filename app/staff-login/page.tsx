@@ -13,8 +13,8 @@ import { AlertCircle } from "lucide-react"
 
 export default function StaffLoginPage() {
   const router = useRouter()
-  const [name, setName] = useState("ELT") // 開発用の初期値
-  const [passcode, setPasscode] = useState("toyo!") // 開発用の初期値
+  const [name, setName] = useState("") // 開発用の初期値
+  const [passcode, setPasscode] = useState("") // 開発用の初期値
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [debugInfo, setDebugInfo] = useState<any>(null)
