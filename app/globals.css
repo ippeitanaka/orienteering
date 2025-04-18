@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    --background: 210 50% 98%;
-    --foreground: 210 40% 20%;
+    --background: 350 100% 98%;
+    --foreground: 350 40% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 40% 20%;
+    --card-foreground: 350 40% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 40% 20%;
+    --popover-foreground: 350 40% 20%;
 
-    --primary: 210 90% 60%;
-    --primary-foreground: 210 10% 98%;
+    --primary: 350 90% 65%;
+    --primary-foreground: 350 10% 98%;
 
-    --secondary: 150 60% 60%;
-    --secondary-foreground: 150 10% 98%;
+    --secondary: 160 80% 60%;
+    --secondary-foreground: 160 10% 98%;
 
-    --muted: 210 20% 92%;
-    --muted-foreground: 210 40% 45%;
+    --muted: 350 20% 92%;
+    --muted-foreground: 350 40% 45%;
 
     --accent: 35 90% 70%;
     --accent-foreground: 35 30% 25%;
@@ -28,31 +28,31 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 210 90% 60%;
+    --border: 350 20% 88%;
+    --input: 350 20% 88%;
+    --ring: 350 90% 65%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 210 30% 10%;
-    --foreground: 210 10% 95%;
+    --background: 350 30% 10%;
+    --foreground: 350 10% 95%;
 
-    --card: 210 30% 12%;
-    --card-foreground: 210 10% 95%;
+    --card: 350 30% 12%;
+    --card-foreground: 350 10% 95%;
 
-    --popover: 210 30% 12%;
-    --popover-foreground: 210 10% 95%;
+    --popover: 350 30% 12%;
+    --popover-foreground: 350 10% 95%;
 
-    --primary: 210 70% 60%;
-    --primary-foreground: 210 10% 98%;
+    --primary: 350 70% 60%;
+    --primary-foreground: 350 10% 98%;
 
-    --secondary: 150 50% 40%;
-    --secondary-foreground: 150 10% 95%;
+    --secondary: 160 50% 40%;
+    --secondary-foreground: 160 10% 95%;
 
-    --muted: 210 30% 20%;
-    --muted-foreground: 210 10% 70%;
+    --muted: 350 30% 20%;
+    --muted-foreground: 350 10% 70%;
 
     --accent: 35 50% 50%;
     --accent-foreground: 35 10% 95%;
@@ -60,9 +60,9 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 30% 25%;
-    --input: 210 30% 25%;
-    --ring: 210 70% 60%;
+    --border: 350 30% 25%;
+    --input: 350 30% 25%;
+    --ring: 350 70% 60%;
   }
 }
 
@@ -73,6 +73,7 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "palt" 1;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ff8fab' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
   }
   h1,
   h2,
@@ -81,6 +82,18 @@
   h5,
   h6 {
     @apply font-heading font-bold tracking-tight;
+    letter-spacing: 0.01em;
+  }
+
+  /* かわいいフォントスタイル */
+  .text-cute {
+    @apply font-cute;
+    letter-spacing: 0.02em;
+  }
+
+  .title-cute {
+    @apply font-cute text-primary;
+    text-shadow: 1px 1px 0px rgba(255, 143, 171, 0.2);
   }
 }
 
@@ -88,15 +101,15 @@
 @layer components {
   /* カードのスタイルを改善 */
   .cute-card {
-    @apply rounded-xl border border-primary/20 bg-white/90 shadow-lg transition-all hover:shadow-xl backdrop-blur-sm p-1 relative z-10;
+    @apply rounded-3xl border-2 border-primary/20 bg-white/90 shadow-cute-md transition-all hover:shadow-cute-lg backdrop-blur-sm p-1 relative z-10 overflow-hidden;
   }
 
   .cute-button {
-    @apply rounded-lg bg-primary text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95;
+    @apply rounded-2xl bg-primary text-primary-foreground shadow-cute-md transition-all hover:bg-primary/90 hover:shadow-glow-pink hover:-translate-y-0.5 active:translate-y-0 active:scale-95 font-medium;
   }
 
   .cute-input {
-    @apply rounded-lg border-2 border-primary/30 bg-white/90 px-4 py-2 shadow-inner focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+    @apply rounded-2xl border-2 border-primary/30 bg-white/90 px-4 py-2 shadow-inner focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
   }
 
   .cute-badge {
@@ -110,11 +123,11 @@
 
   /* 新しいスタイル追加 */
   .glass-panel {
-    @apply bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl shadow-lg p-4;
+    @apply bg-white/80 backdrop-blur-sm border-2 border-white/30 rounded-3xl shadow-cute-md p-4;
   }
 
   .nav-item {
-    @apply flex items-center gap-2 px-4 py-2 rounded-lg transition-all hover:bg-primary/10;
+    @apply flex items-center gap-2 px-4 py-2 rounded-2xl transition-all hover:bg-primary/10;
   }
 
   .nav-item-active {
@@ -136,7 +149,7 @@
 
   /* タブのスタイルを改善 */
   .custom-tab {
-    @apply rounded-xl py-2 px-4 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground;
+    @apply rounded-2xl py-2 px-4 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-cute;
   }
 
   /* マーカーのスタイルを改善 */
@@ -148,192 +161,171 @@
   .bg-decoration {
     @apply absolute -z-10 rounded-full blur-xl opacity-60;
   }
+
+  /* かわいいボタンバリエーション */
+  .btn-pink {
+    @apply bg-pink text-white hover:bg-pink-dark hover:shadow-glow-pink;
+  }
+
+  .btn-mint {
+    @apply bg-mint text-gray-700 hover:bg-mint-dark hover:shadow-glow-mint;
+  }
+
+  .btn-lavender {
+    @apply bg-lavender text-gray-700 hover:bg-lavender-dark hover:shadow-glow-lavender;
+  }
+
+  .btn-lemon {
+    @apply bg-lemon text-gray-700 hover:bg-lemon-dark hover:shadow-glow-lemon;
+  }
+
+  .btn-peach {
+    @apply bg-peach text-gray-700 hover:bg-peach-dark hover:shadow-glow-peach;
+  }
+
+  /* かわいいカードバリエーション */
+  .card-pink {
+    @apply border-pink/30 bg-pink-light/30;
+  }
+
+  .card-mint {
+    @apply border-mint/30 bg-mint-light/30;
+  }
+
+  .card-lavender {
+    @apply border-lavender/30 bg-lavender-light/30;
+  }
+
+  .card-lemon {
+    @apply border-lemon/30 bg-lemon-light/30;
+  }
+
+  .card-peach {
+    @apply border-peach/30 bg-peach-light/30;
+  }
+
+  /* かわいいバッジ */
+  .cute-badge-pink {
+    @apply bg-pink text-white px-3 py-1 rounded-full text-xs font-medium shadow-sm;
+  }
+
+  .cute-badge-mint {
+    @apply bg-mint text-gray-700 px-3 py-1 rounded-full text-xs font-medium shadow-sm;
+  }
+
+  .cute-badge-lavender {
+    @apply bg-lavender text-gray-700 px-3 py-1 rounded-full text-xs font-medium shadow-sm;
+  }
+
+  .cute-badge-lemon {
+    @apply bg-lemon text-gray-700 px-3 py-1 rounded-full text-xs font-medium shadow-sm;
+  }
+
+  .cute-badge-peach {
+    @apply bg-peach text-gray-700 px-3 py-1 rounded-full text-xs font-medium shadow-sm;
+  }
+
+  /* かわいいタイトル装飾 */
+  .title-decoration {
+    position: relative;
+    display: inline-block;
+  }
+
+  .title-decoration::before,
+  .title-decoration::after {
+    content: "";
+    position: absolute;
+    height: 8px;
+    border-radius: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(to right, rgba(255, 143, 171, 0.7), rgba(150, 247, 210, 0.7));
+  }
+
+  .title-decoration::before {
+    left: -20px;
+    width: 12px;
+  }
+
+  .title-decoration::after {
+    right: -20px;
+    width: 12px;
+  }
 }
 
 /* アニメーション付きの背景 - より洗練されたデザインに */
 .cute-bg {
-  background-image: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 90% 20%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 50% 80%, rgba(249, 115, 22, 0.1) 0%, transparent 50%);
-  background-size: 100% 100%;
+  background-color: #fff8fa;
+  background-image: radial-gradient(circle at 10% 10%, rgba(255, 143, 171, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(150, 247, 210, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(255, 208, 169, 0.1) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ff8fab' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 100% 100%, 100% 100%, 200px 200px;
+  animation: bg-shift 20s ease infinite;
+}
+
+.cute-bg-alt {
+  background-color: #f8faff;
+  background-image: radial-gradient(circle at 10% 10%, rgba(200, 182, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(150, 247, 210, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(255, 240, 165, 0.1) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23c8b6ff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 100% 100%, 100% 100%, 200px 200px;
   animation: bg-shift 20s ease infinite;
 }
 
 @keyframes bg-shift {
   0%,
   100% {
-    background-position: 0% 0%;
-  }
-  25% {
-    background-position: 10% 20%;
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
   }
   50% {
-    background-position: 5% 10%;
-  }
-  75% {
-    background-position: 15% 5%;
+    background-position: 0% 0%, 0% 0%, 0% 0%, 10px 10px;
   }
 }
 
-/* スクロールバーのカスタマイズ */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: hsl(var(--background));
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.4);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.6);
-}
-
-/* Leaflet関連のスタイル改善 */
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-/* Leafletのポップアップスタイル */
-.leaflet-popup-content-wrapper {
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-.leaflet-popup-content {
-  margin: 0.85rem;
-  font-family: var(--font-inter), var(--font-noto), sans-serif;
-}
-
-/* チームマーカーのスタイル改善 */
-.custom-team-marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-/* チームマーカーのパルスアニメーション */
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes ripple {
-  0% {
-    transform: scale(0.4);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(0.8);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
-}
-
-/* 現在位置マーカーのスタイル改善 */
-.current-position-marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.35));
-}
-
-/* チームラベルのスタイル改善 */
-.team-label {
-  pointer-events: none;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
-}
-
-/* マップコンテナのスタイル */
-#map-container {
-  background-color: #f0f8ff;
-  position: relative;
-  z-index: 1;
-  border-radius: 0.75rem;
-  overflow: hidden;
-}
-
-/* ページトランジション用アニメーション */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-transition {
-  animation: fadeIn 0.4s ease-out;
-}
-
-/* ロード状態のアニメーション */
-.pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-/* 新しいカード用アニメーション */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* スライドインアニメーション */
 .slide-in {
-  animation: slideIn 0.5s ease-out forwards;
+  animation: slide-up 0.6s ease-out forwards;
 }
 
-/* スタガード表示用のディレイ */
-.delay-100 {
+.slide-in.delay-100 {
   animation-delay: 0.1s;
 }
-.delay-200 {
+
+.slide-in.delay-200 {
   animation-delay: 0.2s;
 }
-.delay-300 {
-  animation-delay: 0.3s;
+
+/* ページ遷移アニメーション */
+.page-transition {
+  animation: fade-in 0.5s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* スクロールバーのスタイル */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }

@@ -39,7 +39,7 @@ export default function CheckpointForm({ checkpoint, onSuccess, onCancel }: Chec
       description,
       latitude: Number.parseFloat(latitude),
       longitude: Number.parseFloat(longitude),
-      point_value: Number.parseInt(pointValue),
+      point_value: pointValue, // 文字列のまま送信
     }
 
     try {

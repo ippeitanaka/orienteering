@@ -16,7 +16,7 @@ export interface Checkpoint {
   description: string | null
   latitude: number
   longitude: number
-  point_value: number
+  point_value: string | number // 文字列または数値として扱えるように修正
 }
 
 export interface Team {
@@ -45,14 +45,34 @@ export interface Staff {
 }
 
 export async function getCheckpoints(): Promise<Checkpoint[]> {
-  const { data, error } = await supabase.from("checkpoints").select("*")
+  try {
+    // APIエンドポイントを使用してチェックポイントを取得
+    const response = await fetch("/api/checkpoints", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
 
-  if (error) {
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+
+    const result = await response.json()
+    return result.data || []
+  } catch (error) {
     console.error("Error fetching checkpoints:", error)
-    throw error
-  }
 
-  return data || []
+    // APIが失敗した場合、直接Supabaseから取得を試みる
+    const { data, error: supabaseError } = await supabase.from("checkpoints").select("*")
+
+    if (supabaseError) {
+      console.error("Supabase error:", supabaseError)
+      throw supabaseError
+    }
+
+    return data || []
+  }
 }
 
 export async function getTeamLocations(): Promise<TeamLocation[]> {
@@ -162,14 +182,24 @@ export async function staffCheckInTeam(
   return { success: true, message: "チェックインが完了しました！" }
 }
 
+// チェックポイント関連の関数を修正
 export async function createCheckpoint(
   checkpointData: any,
 ): Promise<{ success: boolean; message: string; data?: Checkpoint }> {
   const { name, description, latitude, longitude, point_value } = checkpointData
 
+  // point_valueを文字列に変換して保存
   const { data, error } = await supabase
     .from("checkpoints")
-    .insert([{ name, description, latitude, longitude, point_value: point_value || 0 }])
+    .insert([
+      {
+        name,
+        description,
+        latitude,
+        longitude,
+        point_value: point_value ? String(point_value) : "0",
+      },
+    ])
     .select()
 
   if (error) {
@@ -186,9 +216,16 @@ export async function updateCheckpoint(
 ): Promise<{ success: boolean; message: string; data?: Checkpoint }> {
   const { name, description, latitude, longitude, point_value } = checkpointData
 
+  // point_valueを文字列に変換して更新
   const { data, error } = await supabase
     .from("checkpoints")
-    .update({ name, description, latitude, longitude, point_value: point_value || 0 })
+    .update({
+      name,
+      description,
+      latitude,
+      longitude,
+      point_value: point_value ? String(point_value) : "0",
+    })
     .eq("id", checkpointId)
     .select()
 

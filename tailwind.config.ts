@@ -20,7 +20,8 @@ const config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)", "var(--font-noto)", "sans-serif"],
-        heading: ["var(--font-noto)", "var(--font-inter)", "sans-serif"],
+        heading: ["var(--font-baloo)", "var(--font-bubblegum)", "var(--font-noto)", "sans-serif"],
+        cute: ["var(--font-bubblegum)", "var(--font-baloo)", "var(--font-noto)", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -55,6 +56,32 @@ const config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // カスタムカラー
+        pink: {
+          light: "#FFD6E0",
+          DEFAULT: "#FF8FAB",
+          dark: "#FF5C8A",
+        },
+        mint: {
+          light: "#C9FFE2",
+          DEFAULT: "#96F7D2",
+          dark: "#5AEDB5",
+        },
+        lavender: {
+          light: "#E2D6FF",
+          DEFAULT: "#C8B6FF",
+          dark: "#A48AFF",
+        },
+        lemon: {
+          light: "#FFF8D6",
+          DEFAULT: "#FFF0A5",
+          dark: "#FFE566",
+        },
+        peach: {
+          light: "#FFE8D6",
+          DEFAULT: "#FFD0A9",
+          dark: "#FFBA7A",
         },
       },
       borderRadius: {
@@ -146,6 +173,20 @@ const config = {
             opacity: "1",
           },
         },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-3deg)" },
+          "50%": { transform: "rotate(3deg)" },
+        },
+        "bounce-in": {
+          "0%": { transform: "scale(0.8)", opacity: "0" },
+          "80%": { transform: "scale(1.1)" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "float-rotate": {
+          "0%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-10px) rotate(5deg)" },
+          "100%": { transform: "translateY(0) rotate(0deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -158,11 +199,22 @@ const config = {
         ripple: "ripple 1.5s ease-out",
         "slide-up": "slide-up 0.6s ease-out",
         "slide-in-right": "slide-in-right 0.6s ease-out",
+        wiggle: "wiggle 1s ease-in-out infinite",
+        "bounce-in": "bounce-in 0.5s ease-out",
+        "float-rotate": "float-rotate 5s ease-in-out infinite",
       },
       boxShadow: {
         glow: "0 0 10px rgba(59, 130, 246, 0.5)",
         "glow-green": "0 0 10px rgba(16, 185, 129, 0.5)",
         "glow-orange": "0 0 10px rgba(249, 115, 22, 0.5)",
+        "glow-pink": "0 0 15px rgba(255, 143, 171, 0.6)",
+        "glow-mint": "0 0 15px rgba(150, 247, 210, 0.6)",
+        "glow-lavender": "0 0 15px rgba(200, 182, 255, 0.6)",
+        "glow-lemon": "0 0 15px rgba(255, 240, 165, 0.6)",
+        "glow-peach": "0 0 15px rgba(255, 208, 169, 0.6)",
+        "cute-sm": "0 3px 10px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05)",
+        "cute-md": "0 5px 15px rgba(0, 0, 0, 0.1), 0 3px 5px rgba(0, 0, 0, 0.05)",
+        "cute-lg": "0 10px 25px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.05)",
       },
     },
   },

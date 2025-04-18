@@ -41,12 +41,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (description !== undefined) updateData.description = description
     if (latitude !== undefined) updateData.latitude = latitude
     if (longitude !== undefined) updateData.longitude = longitude
-    if (point_value !== undefined) updateData.point_value = point_value
+    if (point_value !== undefined) updateData.point_value = String(point_value) // 文字列に変換
 
     // データが空の場合はエラー
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })
     }
+
+    console.log("Updating checkpoint with data:", updateData)
 
     const { data, error } = await supabaseServer.from("checkpoints").update(updateData).eq("id", checkpointId).select()
 

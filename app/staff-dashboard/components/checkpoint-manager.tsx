@@ -29,6 +29,7 @@ export default function CheckpointManager() {
     try {
       setLoading(true)
       const checkpointsData = await getCheckpoints()
+      console.log("Fetched checkpoints:", checkpointsData) // デバッグ用
       setCheckpoints(checkpointsData)
       setError(null)
     } catch (err) {
@@ -68,14 +69,15 @@ export default function CheckpointManager() {
       })
 
       if (!response.ok) {
-        throw new Error("チェックポイントの削除に失敗しました")
+        const errorData = await response.json()
+        throw new Error(errorData.error || "チェックポイントの削除に失敗しました")
       }
 
       setIsDeleteDialogOpen(false)
       setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
     } catch (err) {
       console.error("Failed to delete checkpoint:", err)
-      setError("チェックポイントの削除中にエラーが発生しました")
+      setError(err instanceof Error ? err.message : "チェックポイントの削除中にエラーが発生しました")
     }
   }
 

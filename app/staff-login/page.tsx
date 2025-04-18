@@ -169,10 +169,6 @@ export default function StaffLoginPage() {
             <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
           </div>
         )}
-
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>緊急用ログイン: admin / admin123</p>
-        </div>
       </div>
     </div>
   )
