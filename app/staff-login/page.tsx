@@ -4,26 +4,22 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 export default function StaffLoginPage() {
-  const router = useRouter()
-  const [name, setName] = useState("") // 開発用の初期値
-  const [passcode, setPasscode] = useState("") // 開発用の初期値
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [name, setName] = useState("")
+  const [passcode, setPasscode] = useState("")
+  const [error, setError] = useState("")
   const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [setupMessage, setSetupMessage] = useState("")
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
+    setError("")
     setDebugInfo(null)
+    setIsLoading(true)
 
     try {
       console.log("Submitting staff login:", { name, passcode })
@@ -57,66 +53,117 @@ export default function StaffLoginPage() {
         setDebugInfo({ message: err.message })
       }
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }
+
+  const handleSetup = async () => {
+    setSetupMessage("")
+    setIsLoading(true)
+
+    try {
+      const response = await fetch("/api/setup")
+      const data = await response.json()
+
+      if (data.success) {
+        setSetupMessage(`セットアップ成功: ${data.message}`)
+      } else {
+        setSetupMessage(`セットアップ失敗: ${data.error}`)
+      }
+    } catch (err) {
+      setSetupMessage("セットアップ中にエラーが発生しました")
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="container flex items-center justify-center min-h-screen py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>スタッフログイン</CardTitle>
-          <CardDescription>スタッフ専用ページにアクセスするにはログインしてください</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>エラー</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-                {debugInfo && (
-                  <details className="mt-2 text-xs">
-                    <summary>デバッグ情報</summary>
-                    <pre className="mt-2 w-full max-h-40 overflow-auto bg-slate-950 text-slate-50 p-2 rounded text-xs">
-                      {JSON.stringify(debugInfo, null, 2)}
-                    </pre>
-                  </details>
-                )}
-              </Alert>
-            )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-md">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">スタッフログイン</h1>
+          <p className="mt-2 text-gray-600">続行するにはログインしてください</p>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">スタッフ名</Label>
-              <Input
+        {error && (
+          <div className="bg-red-50 text-red-800 p-3 rounded-md">
+            <p className="font-medium">{error}</p>
+            {debugInfo && (
+              <details className="mt-2 text-xs">
+                <summary className="cursor-pointer">デバッグ情報</summary>
+                <pre className="mt-2 w-full max-h-40 overflow-auto bg-slate-950 text-slate-50 p-2 rounded text-xs">
+                  {JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        )}
+
+        {setupMessage && (
+          <div className="bg-blue-50 text-blue-800 p-3 rounded-md">
+            <p>{setupMessage}</p>
+          </div>
+        )}
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                スタッフ名
+              </label>
+              <input
                 id="name"
+                name="name"
                 type="text"
+                required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="例: ELT Staff"
-                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="スタッフ名を入力"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="passcode">パスワード</Label>
-              <Input
+            <div>
+              <label htmlFor="passcode" className="block text-sm font-medium text-gray-700">
+                パスワード
+              </label>
+              <input
                 id="passcode"
+                name="passcode"
                 type="password"
+                required
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="パスワードを入力"
-                required
               />
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "ログイン中..." : "ログイン"}
-            </Button>
-          </CardFooter>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
+            >
+              {isLoading ? "ログイン中..." : "ログイン"}
+            </button>
+          </div>
         </form>
-      </Card>
+
+        <div className="flex justify-between items-center mt-4">
+          <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
+            トップページに戻る
+          </Link>
+          <button onClick={handleSetup} disabled={isLoading} className="text-sm text-green-600 hover:text-green-800">
+            初期データセットアップ
+          </button>
+        </div>
+
+        <div className="text-center mt-4 text-sm text-gray-500">
+          <p>緊急用ログイン: admin / admin123</p>
+          <p className="mt-1">または elt10 / elt10 など</p>
+        </div>
+      </div>
     </div>
   )
 }

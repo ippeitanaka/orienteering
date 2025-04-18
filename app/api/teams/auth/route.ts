@@ -7,6 +7,8 @@ export async function POST(request: Request) {
     const requestData = await request.json()
     const { team_code } = requestData
 
+    console.log("Team login attempt:", { team_code })
+
     if (!team_code) {
       return NextResponse.json({ error: "チームコードが必要です" }, { status: 400 })
     }
@@ -16,6 +18,8 @@ export async function POST(request: Request) {
 
     // チームコードでチームを検索
     const { data: team, error } = await supabase.from("teams").select("*").eq("team_code", team_code).single()
+
+    console.log("Team query result:", { team, error })
 
     if (error || !team) {
       console.error("チーム認証エラー:", error)
@@ -54,6 +58,12 @@ export async function POST(request: Request) {
     return response
   } catch (error) {
     console.error("チームログインエラー:", error)
-    return NextResponse.json({ error: "ログイン処理中にエラーが発生しました" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "ログイン処理中にエラーが発生しました",
+        debug: { error: error instanceof Error ? error.message : String(error) },
+      },
+      { status: 500 },
+    )
   }
 }

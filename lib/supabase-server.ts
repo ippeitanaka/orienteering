@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient as supabaseCreateClient } from "@supabase/supabase-js"
 
 // 環境変数が存在するか確認
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -13,7 +13,7 @@ let supabaseServer = null
 
 try {
   if (supabaseUrl && supabaseServiceKey) {
-    supabaseServer = createClient(supabaseUrl, supabaseServiceKey, {
+    supabaseServer = supabaseCreateClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -30,3 +30,4 @@ try {
 }
 
 export { supabaseServer }
+export const createClient = supabaseCreateClient
