@@ -1,162 +1,113 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Link from "next/link"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, LogOut } from "lucide-react"
-import CheckpointManager from "./components/checkpoint-manager"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 import TeamManager from "./components/team-manager"
-import Scoreboard from "@/components/scoreboard"
-import { getCheckpoints, getTeams } from "@/lib/supabase"
+import CheckpointManager from "./components/checkpoint-manager"
+import TimerManager from "./components/timer-manager"
+import { Clock } from "lucide-react"
 
-export default function StaffDashboardPage() {
-  const [staffName, setStaffName] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [checkpoints, setCheckpoints] = useState([])
-  const [teams, setTeams] = useState([])
-  const [dataLoading, setDataLoading] = useState(true)
+export default function StaffDashboard() {
+  const { toast } = useToast()
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    // ローカルストレージからスタッフ情報を取得
-    const storedStaffName = localStorage.getItem("staffName")
-
-    if (!storedStaffName) {
-      // セッションがない場合はログインページにリダイレクト
-      router.push("/staff-login")
-      return
-    }
-
-    setStaffName(storedStaffName)
-    setLoading(false)
-
-    // チェックポイントとチームのデータを取得
-    async function fetchData() {
+    const checkAuth = async () => {
       try {
-        setDataLoading(true)
-        const [checkpointsData, teamsData] = await Promise.all([getCheckpoints(), getTeams()])
-        setCheckpoints(checkpointsData)
-        setTeams(teamsData)
-      } catch (err) {
-        console.error("データ取得エラー:", err)
-        setError("データの取得中にエラーが発生しました")
+        const response = await fetch("/api/staff/session")
+        const data = await response.json()
+
+        if (!data.authenticated) {
+          router.push("/staff-login")
+        } else {
+          setIsAuthenticated(true)
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error)
+        toast({
+          title: "エラー",
+          description: "認証状態の確認中にエラーが発生しました",
+          variant: "destructive",
+        })
+        router.push("/staff-login")
       } finally {
-        setDataLoading(false)
+        setIsLoading(false)
       }
     }
 
-    fetchData()
-  }, [router])
+    checkAuth()
+  }, [router, toast])
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/staff/logout", {
+      const response = await fetch("/api/staff/logout", {
         method: "POST",
       })
 
-      // ローカルストレージからスタッフ情報を削除
-      localStorage.removeItem("staffId")
-      localStorage.removeItem("staffName")
-      localStorage.removeItem("staffCheckpointId")
-
-      // ログインページにリダイレクト
-      router.push("/staff-login")
-    } catch (err) {
-      console.error("Logout error:", err)
-      setError("ログアウト中にエラーが発生しました")
+      if (response.ok) {
+        toast({
+          title: "ログアウト成功",
+          description: "スタッフアカウントからログアウトしました",
+        })
+        router.push("/")
+      } else {
+        throw new Error("Logout failed")
+      }
+    } catch (error) {
+      console.error("Error during logout:", error)
+      toast({
+        title: "エラー",
+        description: "ログアウト中にエラーが発生しました",
+        variant: "destructive",
+      })
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto"></div>
-          <p className="mt-4">ログイン情報を確認中...</p>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
       </div>
     )
   }
 
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle className="text-center text-red-500">エラーが発生しました</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>エラー</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-            <div className="flex justify-center mt-4">
-              <Link href="/staff-login">
-                <Button>ログインページに戻る</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+  if (!isAuthenticated) {
+    return null
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        <header className="mb-8 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">スタッフダッシュボード</h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                ようこそ、<span className="font-medium text-primary">{staffName}</span> さん
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              ログアウト
-            </Button>
-          </div>
-        </header>
-
-        <Tabs defaultValue="checkpoints" className="w-full">
-          <TabsList className="grid grid-cols-3 mb-8">
-            <TabsTrigger value="checkpoints">チェックポイント管理</TabsTrigger>
-            <TabsTrigger value="teams">チーム管理</TabsTrigger>
-            <TabsTrigger value="scoreboard">スコアボード</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="checkpoints">
-            <CheckpointManager />
-          </TabsContent>
-
-          <TabsContent value="teams">
-            <TeamManager />
-          </TabsContent>
-
-          <TabsContent value="scoreboard">
-            <Card>
-              <CardHeader>
-                <CardTitle>スコアボード</CardTitle>
-                <CardDescription>チームのスコアとランキングを確認します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Scoreboard />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
-        </div>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">東洋医療専門学校　救急救命士学科 - スタッフダッシュボード</h1>
+        <Button variant="outline" onClick={handleLogout}>
+          ログアウト
+        </Button>
       </div>
+
+      <Tabs defaultValue="teams">
+        <TabsList className="mb-4">
+          <TabsTrigger value="teams">チーム管理</TabsTrigger>
+          <TabsTrigger value="checkpoints">チェックポイント管理</TabsTrigger>
+          <TabsTrigger value="timer" className="flex items-center gap-1">
+            <Clock className="h-4 w-4" />
+            タイマー管理
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="teams">
+          <TeamManager />
+        </TabsContent>
+        <TabsContent value="checkpoints">
+          <CheckpointManager />
+        </TabsContent>
+        <TabsContent value="timer">
+          <TimerManager />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
