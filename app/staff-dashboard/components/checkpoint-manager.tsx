@@ -2,139 +2,105 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { AlertCircle, Edit, Trash, Plus } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertCircle, Edit, Trash, Plus, QrCode, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-interface Checkpoint {
-  id: number
-  name: string
-  latitude: number
-  longitude: number
-  points: number
-}
+import CheckpointForm from "@/components/staff/checkpoint-form"
+import QRCodeDisplay from "@/components/staff/qr-code-display"
+import { getCheckpoints, type Checkpoint } from "@/lib/supabase"
 
 export default function CheckpointManager() {
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [currentCheckpoint, setCurrentCheckpoint] = useState<Partial<Checkpoint>>({})
-  const [isEditing, setIsEditing] = useState(false)
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false)
+  const [currentCheckpoint, setCurrentCheckpoint] = useState<Checkpoint | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // チェックポイント一覧を取得
+  useEffect(() => {
+    fetchCheckpoints()
+  }, [refreshTrigger])
+
   const fetchCheckpoints = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/checkpoints")
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "チェックポイントの取得に失敗しました")
-      }
-
-      setCheckpoints(data.checkpoints)
-    } catch (err: any) {
-      setError(err.message)
+      const checkpointsData = await getCheckpoints()
+      setCheckpoints(checkpointsData)
+      setError(null)
+    } catch (err) {
+      console.error("Failed to fetch checkpoints:", err)
+      setError("チェックポイントの取得に失敗しました")
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => {
-    fetchCheckpoints()
-  }, [])
-
-  // チェックポイントの作成/更新
-  const handleSaveCheckpoint = async () => {
-    try {
-      if (
-        !currentCheckpoint.name ||
-        currentCheckpoint.latitude === undefined ||
-        currentCheckpoint.longitude === undefined ||
-        currentCheckpoint.points === undefined
-      ) {
-        setError("すべての項目を入力してください")
-        return
-      }
-
-      const method = isEditing ? "PUT" : "POST"
-      const url = isEditing ? `/api/checkpoints/${currentCheckpoint.id}` : "/api/checkpoints"
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(currentCheckpoint),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "チェックポイントの保存に失敗しました")
-      }
-
-      setIsDialogOpen(false)
-      fetchCheckpoints()
-    } catch (err: any) {
-      setError(err.message)
-    }
+  const handleCreateCheckpoint = () => {
+    setCurrentCheckpoint(null)
+    setIsFormDialogOpen(true)
   }
 
-  // チェックポイントの削除
-  const handleDeleteCheckpoint = async () => {
+  const handleEditCheckpoint = (checkpoint: Checkpoint) => {
+    setCurrentCheckpoint(checkpoint)
+    setIsFormDialogOpen(true)
+  }
+
+  const handleDeleteCheckpoint = (checkpoint: Checkpoint) => {
+    setCurrentCheckpoint(checkpoint)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleShowQR = (checkpoint: Checkpoint) => {
+    setCurrentCheckpoint(checkpoint)
+    setIsQRDialogOpen(true)
+  }
+
+  const confirmDeleteCheckpoint = async () => {
+    if (!currentCheckpoint) return
+
     try {
       const response = await fetch(`/api/checkpoints/${currentCheckpoint.id}`, {
         method: "DELETE",
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || "チェックポイントの削除に失敗しました")
+        throw new Error("チェックポイントの削除に失敗しました")
       }
 
       setIsDeleteDialogOpen(false)
-      fetchCheckpoints()
-    } catch (err: any) {
-      setError(err.message)
+      setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
+    } catch (err) {
+      console.error("Failed to delete checkpoint:", err)
+      setError("チェックポイントの削除中にエラーが発生しました")
     }
   }
 
-  // 新規チェックポイント作成ダイアログを開く
-  const openNewCheckpointDialog = () => {
-    setCurrentCheckpoint({})
-    setIsEditing(false)
-    setIsDialogOpen(true)
-  }
-
-  // チェックポイント編集ダイアログを開く
-  const openEditCheckpointDialog = (checkpoint: Checkpoint) => {
-    setCurrentCheckpoint(checkpoint)
-    setIsEditing(true)
-    setIsDialogOpen(true)
-  }
-
-  // チェックポイント削除ダイアログを開く
-  const openDeleteCheckpointDialog = (checkpoint: Checkpoint) => {
-    setCurrentCheckpoint(checkpoint)
-    setIsDeleteDialogOpen(true)
+  const handleFormSuccess = (checkpoint: Checkpoint) => {
+    setIsFormDialogOpen(false)
+    setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
   }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>チェックポイント管理</CardTitle>
-        <Button onClick={openNewCheckpointDialog} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          新規作成
-        </Button>
+        <div>
+          <CardTitle>チェックポイント管理</CardTitle>
+          <CardDescription>チェックポイントの作成、編集、削除を行います</CardDescription>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setRefreshTrigger((prev) => prev + 1)}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            更新
+          </Button>
+          <Button size="sm" onClick={handleCreateCheckpoint}>
+            <Plus className="h-4 w-4 mr-1" />
+            新規作成
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {error && (
@@ -145,127 +111,120 @@ export default function CheckpointManager() {
         )}
 
         {loading ? (
-          <div className="text-center py-4">読み込み中...</div>
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto"></div>
+            <p className="mt-2">チェックポイント情報を読み込み中...</p>
+          </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>名前</TableHead>
-                <TableHead>緯度</TableHead>
-                <TableHead>経度</TableHead>
-                <TableHead>ポイント</TableHead>
-                <TableHead className="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {checkpoints.length === 0 ? (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">
-                    チェックポイントがありません
-                  </TableCell>
+                  <TableHead>ID</TableHead>
+                  <TableHead>名前</TableHead>
+                  <TableHead>説明</TableHead>
+                  <TableHead>位置</TableHead>
+                  <TableHead>ポイント</TableHead>
+                  <TableHead className="text-right">操作</TableHead>
                 </TableRow>
-              ) : (
-                checkpoints.map((checkpoint) => (
-                  <TableRow key={checkpoint.id}>
-                    <TableCell>{checkpoint.id}</TableCell>
-                    <TableCell>{checkpoint.name}</TableCell>
-                    <TableCell>{checkpoint.latitude}</TableCell>
-                    <TableCell>{checkpoint.longitude}</TableCell>
-                    <TableCell>{checkpoint.points}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => openEditCheckpointDialog(checkpoint)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => openDeleteCheckpointDialog(checkpoint)}>
-                        <Trash className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {checkpoints.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      チェックポイントがありません
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  checkpoints.map((checkpoint) => (
+                    <TableRow key={checkpoint.id}>
+                      <TableCell>{checkpoint.id}</TableCell>
+                      <TableCell className="font-medium">{checkpoint.name}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{checkpoint.description || "-"}</TableCell>
+                      <TableCell className="text-xs">
+                        {checkpoint.latitude.toFixed(6)}, {checkpoint.longitude.toFixed(6)}
+                      </TableCell>
+                      <TableCell>{checkpoint.point_value}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleShowQR(checkpoint)}
+                            title="QRコードを表示"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditCheckpoint(checkpoint)}
+                            title="編集"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteCheckpoint(checkpoint)}
+                            title="削除"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         )}
 
         {/* チェックポイント作成/編集ダイアログ */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent>
+        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{isEditing ? "チェックポイントを編集" : "新規チェックポイント"}</DialogTitle>
+              <DialogTitle>{currentCheckpoint ? "チェックポイントを編集" : "新しいチェックポイントを作成"}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">名前</Label>
-                <Input
-                  id="name"
-                  value={currentCheckpoint.name || ""}
-                  onChange={(e) => setCurrentCheckpoint({ ...currentCheckpoint, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="latitude">緯度</Label>
-                <Input
-                  id="latitude"
-                  type="number"
-                  step="0.000001"
-                  value={currentCheckpoint.latitude || ""}
-                  onChange={(e) =>
-                    setCurrentCheckpoint({ ...currentCheckpoint, latitude: Number.parseFloat(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="longitude">経度</Label>
-                <Input
-                  id="longitude"
-                  type="number"
-                  step="0.000001"
-                  value={currentCheckpoint.longitude || ""}
-                  onChange={(e) =>
-                    setCurrentCheckpoint({ ...currentCheckpoint, longitude: Number.parseFloat(e.target.value) })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="points">ポイント</Label>
-                <Input
-                  id="points"
-                  type="number"
-                  value={currentCheckpoint.points || ""}
-                  onChange={(e) =>
-                    setCurrentCheckpoint({ ...currentCheckpoint, points: Number.parseInt(e.target.value) })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                キャンセル
-              </Button>
-              <Button onClick={handleSaveCheckpoint}>保存</Button>
-            </DialogFooter>
+            <CheckpointForm
+              checkpoint={currentCheckpoint || undefined}
+              onSuccess={handleFormSuccess}
+              onCancel={() => setIsFormDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
 
         {/* チェックポイント削除確認ダイアログ */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>チェックポイントを削除</DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p>チェックポイント「{currentCheckpoint.name}」を削除してもよろしいですか？</p>
+              <p>チェックポイント「{currentCheckpoint?.name}」を削除してもよろしいですか？</p>
               <p className="text-sm text-muted-foreground mt-2">この操作は元に戻せません。</p>
             </div>
-            <DialogFooter>
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                 キャンセル
               </Button>
-              <Button variant="destructive" onClick={handleDeleteCheckpoint}>
+              <Button variant="destructive" onClick={confirmDeleteCheckpoint}>
                 削除
               </Button>
-            </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* QRコード表示ダイアログ */}
+        <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>チェックポイントQRコード</DialogTitle>
+            </DialogHeader>
+            {currentCheckpoint && (
+              <QRCodeDisplay checkpoint={currentCheckpoint} onClose={() => setIsQRDialogOpen(false)} />
+            )}
           </DialogContent>
         </Dialog>
       </CardContent>

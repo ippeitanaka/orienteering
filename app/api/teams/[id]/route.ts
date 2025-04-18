@@ -65,3 +65,34 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ error: "Failed to update team", success: false }, { status: 500 })
   }
 }
+
+// チーム削除用のDELETEメソッドを追加
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  try {
+    if (!supabaseServer) {
+      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
+    }
+
+    const teamId = params.id
+
+    // チームが存在するか確認
+    const { data: team, error: checkError } = await supabaseServer.from("teams").select("id").eq("id", teamId).single()
+
+    if (checkError || !team) {
+      return NextResponse.json({ error: "Team not found", success: false }, { status: 404 })
+    }
+
+    // チームを削除
+    const { error } = await supabaseServer.from("teams").delete().eq("id", teamId)
+
+    if (error) {
+      console.error("Error deleting team:", error)
+      return NextResponse.json({ error: error.message, success: false }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, message: "チームを削除しました" })
+  } catch (error) {
+    console.error("Error in DELETE /api/teams/[id]:", error)
+    return NextResponse.json({ error: "Failed to delete team", success: false }, { status: 500 })
+  }
+}

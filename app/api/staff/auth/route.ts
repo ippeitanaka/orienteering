@@ -1,6 +1,6 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
+import { supabaseServer } from "@/lib/supabase-server"
 
 export async function POST(request: Request) {
   try {
@@ -20,26 +20,36 @@ export async function POST(request: Request) {
       )
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-
-    // テーブル構造を確認
-    const { data: tableInfo, error: tableError } = await supabase.rpc("debug_table_info", { table_name: "staff" })
-    console.log("Staff table structure:", tableInfo, tableError)
+    if (!supabaseServer) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "データベース接続が利用できません",
+          debug: {
+            message: "supabaseServer is null or undefined",
+            env: {
+              hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+              hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            },
+          },
+        },
+        { status: 500 },
+      )
+    }
 
     // スタッフテーブルの全レコードを取得（デバッグ用）
-    const { data: allStaff, error: allStaffError } = await supabase.from("staff").select("*")
-    console.log("All staff records:", allStaff, "Error:", allStaffError)
+    const { data: allStaff, error: allStaffError } = await supabaseServer.from("staff").select("*")
+    console.log("All staff records:", allStaff?.length || 0, "Error:", allStaffError)
 
     // スタッフテーブルからユーザーを検索
-    const { data: staff, error } = await supabase
+    const { data: staff, error } = await supabaseServer
       .from("staff")
       .select("*")
       .eq("name", name)
       .eq("password", passcode)
       .single()
 
-    console.log("Staff query result:", { staff, error })
+    console.log("Staff query result:", { staff: staff ? "found" : "not found", error })
 
     // 緊急用のフォールバック認証
     if ((error || !staff) && name === "admin" && passcode === "admin123") {
@@ -88,9 +98,6 @@ export async function POST(request: Request) {
     }
 
     if (error || !staff) {
-      // テーブル構造を確認して、実際のカラム名を表示
-      const actualColumns = tableInfo ? JSON.stringify(tableInfo) : "Unknown"
-
       return NextResponse.json(
         {
           success: false,
@@ -99,8 +106,7 @@ export async function POST(request: Request) {
             queriedName: name,
             staffCount: allStaff?.length || 0,
             lastError: error,
-            tableStructure: actualColumns,
-            allStaff: allStaff,
+            allStaff: allStaff?.map((s) => ({ id: s.id, name: s.name })),
           },
         },
         { status: 401 },

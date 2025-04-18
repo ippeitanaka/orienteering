@@ -1,13 +1,14 @@
-import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { cookies } from "next/headers"
 
 export async function POST() {
   try {
+    // スタッフセッションCookieを削除
+    cookies().delete("staff_session")
     cookies().delete("staff_id")
     cookies().delete("staff_name")
-    cookies().delete("staff_session")
 
-    return NextResponse.json({ success: true, message: "ログアウト成功" })
+    return NextResponse.json({ success: true, message: "ログアウトしました" })
   } catch (error) {
     console.error("Logout error:", error)
     return NextResponse.json(

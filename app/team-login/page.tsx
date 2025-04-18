@@ -4,24 +4,30 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ArrowLeft, Hash } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
 
-export default function TeamLogin() {
+export default function TeamLoginPage() {
   const [teamCode, setTeamCode] = useState("")
-  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [debugInfo, setDebugInfo] = useState<any>(null)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
     setLoading(true)
+    setError("")
+    setDebugInfo(null)
 
     try {
+      console.log("Attempting team login with code:", teamCode)
+
       const response = await fetch("/api/teams/auth", {
         method: "POST",
         headers: {
@@ -31,57 +37,94 @@ export default function TeamLogin() {
       })
 
       const data = await response.json()
+      console.log("Team login response:", data)
 
       if (!response.ok) {
-        throw new Error(data.error || "ログインに失敗しました")
+        setError(data.error || "ログイン中にエラーが発生しました")
+        if (data.debug) {
+          setDebugInfo(data.debug)
+        }
+        setLoading(false)
+        return
       }
 
-      // ログイン成功
-      router.push("/team-dashboard")
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
+      // ログイン成功時にローカルストレージにチームIDを保存
+      if (data.team && data.team.id) {
+        localStorage.setItem("teamId", data.team.id.toString())
+        localStorage.setItem("teamName", data.team.name)
+        localStorage.setItem("teamCode", data.team.team_code || "")
+      }
+
+      // ダッシュボードにリダイレクト
+      router.push("/dashboard")
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("ログイン処理中にエラーが発生しました")
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">チームログイン</CardTitle>
-          <CardDescription className="text-center">チームコードを入力してログインしてください</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-4">
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-md mx-auto">
+        <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          ホームに戻る
+        </Link>
+
+        <Card className="cute-card border-primary/30 overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
+          <CardHeader>
+            <CardTitle className="text-center font-heading">チームログイン</CardTitle>
+            <CardDescription className="text-center">
+              チームコードを入力してオリエンテーリングに参加しましょう
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="team-code" className="text-sm font-medium">
+                <Label htmlFor="teamCode" className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-primary" />
                   チームコード
-                </label>
+                </Label>
                 <Input
-                  id="team-code"
-                  placeholder="チームコードを入力"
+                  id="teamCode"
+                  type="text"
                   value={teamCode}
                   onChange={(e) => setTeamCode(e.target.value)}
+                  placeholder="チームコードを入力"
+                  className="cute-input"
                   required
                 />
               </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "ログイン中..." : "ログイン"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full cute-button" disabled={loading}>
+                {loading ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full"></span>
+                    ログイン中...
+                  </span>
+                ) : (
+                  "ログイン"
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+
+        {debugInfo && (
+          <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-md text-xs overflow-auto">
+            <h3 className="font-bold mb-2">デバッグ情報:</h3>
+            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

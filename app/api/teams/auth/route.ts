@@ -1,6 +1,5 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
+import { supabaseServer } from "@/lib/supabase-server"
 
 export async function POST(request: Request) {
   try {
@@ -13,17 +12,57 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "チームコードが必要です" }, { status: 400 })
     }
 
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    if (!supabaseServer) {
+      return NextResponse.json(
+        {
+          error: "データベース接続が利用できません",
+          debug: {
+            message: "supabaseServer is null or undefined",
+            env: {
+              hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+              hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+            },
+          },
+        },
+        { status: 500 },
+      )
+    }
 
     // チームコードでチームを検索
-    const { data: team, error } = await supabase.from("teams").select("*").eq("team_code", team_code).single()
+    const { data: team, error } = await supabaseServer.from("teams").select("*").eq("team_code", team_code).single()
 
     console.log("Team query result:", { team, error })
 
+    // チームコードが見つからない場合、IDで検索（後方互換性のため）
     if (error || !team) {
-      console.error("チーム認証エラー:", error)
-      return NextResponse.json({ error: "チームコードが無効です" }, { status: 401 })
+      const teamId = Number.parseInt(team_code)
+      if (!isNaN(teamId)) {
+        const { data: teamById, error: errorById } = await supabaseServer
+          .from("teams")
+          .select("*")
+          .eq("id", teamId)
+          .single()
+
+        if (errorById || !teamById) {
+          return NextResponse.json(
+            {
+              error: "チームコードが無効です",
+              debug: { error, errorById, team_code },
+            },
+            { status: 401 },
+          )
+        }
+
+        const team = teamById
+      } else {
+        return NextResponse.json(
+          {
+            error: "チームコードが無効です",
+            debug: { error, team_code },
+          },
+          { status: 401 },
+        )
+      }
     }
 
     // セッションにチーム情報を保存
@@ -41,6 +80,7 @@ export async function POST(request: Request) {
         id: team.id,
         name: team.name,
         team_code: team.team_code,
+        color: team.color,
       },
     })
 

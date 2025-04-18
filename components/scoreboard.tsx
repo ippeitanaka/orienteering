@@ -5,7 +5,7 @@ import { getTeams, type Team, getCheckpoints, getTeamCheckins } from "@/lib/supa
 import { getContrastColor } from "@/lib/utils"
 import { Trophy, CheckCircle } from "lucide-react"
 
-export default function Scoreboard() {
+export function Scoreboard() {
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [teamProgress, setTeamProgress] = useState<Record<number, number>>({})
@@ -125,3 +125,5 @@ export default function Scoreboard() {
     </div>
   )
 }
+
+export default Scoreboard

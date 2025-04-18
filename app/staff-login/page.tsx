@@ -5,24 +5,30 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ArrowLeft, User, Lock } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function StaffLoginPage() {
   const [name, setName] = useState("")
   const [passcode, setPasscode] = useState("")
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [setupStatus, setSetupStatus] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [setupMessage, setSetupMessage] = useState("")
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     setError("")
     setDebugInfo(null)
-    setIsLoading(true)
 
     try {
-      console.log("Submitting staff login:", { name, passcode })
+      console.log("Attempting staff login with:", { name, passcode })
 
       const response = await fetch("/api/staff/auth", {
         method: "POST",
@@ -35,133 +41,137 @@ export default function StaffLoginPage() {
       const data = await response.json()
       console.log("Staff login response:", data)
 
-      if (data.success) {
-        // ログイン成功時の処理
-        localStorage.setItem("staffId", data.data.id)
-        localStorage.setItem("staffName", data.data.name || "Staff")
-        localStorage.setItem("staffCheckpointId", data.data.checkpoint_id || "")
-        router.push("/staff-dashboard")
-      } else {
-        // エラー情報を表示
-        setError(data.error || "ログインに失敗しました")
-        setDebugInfo(data.debug || null)
+      if (!response.ok) {
+        setError(data.error || "ログイン中にエラーが発生しました")
+        if (data.debug) {
+          setDebugInfo(data.debug)
+        }
+        setLoading(false)
+        return
       }
+
+      // ログイン成功時にローカルストレージにスタッフ情報を保存
+      if (data.data) {
+        localStorage.setItem("staffId", data.data.id.toString())
+        localStorage.setItem("staffName", data.data.name)
+        if (data.data.checkpoint_id) {
+          localStorage.setItem("staffCheckpointId", data.data.checkpoint_id.toString())
+        }
+      }
+
+      // スタッフダッシュボードにリダイレクト
+      router.push("/staff-dashboard")
     } catch (err) {
-      console.error("Error during staff login:", err)
+      console.error("Login error:", err)
       setError("ログイン処理中にエラーが発生しました")
-      if (err instanceof Error) {
-        setDebugInfo({ message: err.message })
-      }
-    } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   const handleSetup = async () => {
-    setSetupMessage("")
-    setIsLoading(true)
-
+    setSetupStatus("処理中...")
     try {
-      const response = await fetch("/api/setup")
-      const data = await response.json()
+      const response = await fetch("/api/setup", {
+        method: "POST",
+      })
 
-      if (data.success) {
-        setSetupMessage(`セットアップ成功: ${data.message}`)
-      } else {
-        setSetupMessage(`セットアップ失敗: ${data.error}`)
-      }
+      const data = await response.json()
+      setSetupStatus(data.message || "セットアップが完了しました")
     } catch (err) {
-      setSetupMessage("セットアップ中にエラーが発生しました")
-    } finally {
-      setIsLoading(false)
+      console.error("Setup error:", err)
+      setSetupStatus("セットアップ中にエラーが発生しました")
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-10 bg-white rounded-xl shadow-md">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">スタッフログイン</h1>
-          <p className="mt-2 text-gray-600">続行するにはログインしてください</p>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-md mx-auto">
+        <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-6">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          ホームに戻る
+        </Link>
 
-        {error && (
-          <div className="bg-red-50 text-red-800 p-3 rounded-md">
-            <p className="font-medium">{error}</p>
-            {debugInfo && (
-              <details className="mt-2 text-xs">
-                <summary className="cursor-pointer">デバッグ情報</summary>
-                <pre className="mt-2 w-full max-h-40 overflow-auto bg-slate-950 text-slate-50 p-2 rounded text-xs">
-                  {JSON.stringify(debugInfo, null, 2)}
-                </pre>
-              </details>
-            )}
-          </div>
-        )}
+        <Card className="cute-card border-primary/30 overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
+          <CardHeader>
+            <CardTitle className="text-center font-heading">スタッフログイン</CardTitle>
+            <CardDescription className="text-center">
+              スタッフ名とパスワードを入力してログインしてください
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-primary" />
+                  スタッフ名
+                </Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="スタッフ名を入力"
+                  className="cute-input"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="passcode" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-primary" />
+                  パスワード
+                </Label>
+                <Input
+                  id="passcode"
+                  type="password"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  placeholder="パスワードを入力"
+                  className="cute-input"
+                  required
+                />
+              </div>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full cute-button" disabled={loading}>
+                {loading ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full"></span>
+                    ログイン中...
+                  </span>
+                ) : (
+                  "ログイン"
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
 
-        {setupMessage && (
-          <div className="bg-blue-50 text-blue-800 p-3 rounded-md">
-            <p>{setupMessage}</p>
-          </div>
-        )}
-
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                スタッフ名
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="スタッフ名を入力"
-              />
-            </div>
-            <div>
-              <label htmlFor="passcode" className="block text-sm font-medium text-gray-700">
-                パスワード
-              </label>
-              <input
-                id="passcode"
-                name="passcode"
-                type="password"
-                required
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="パスワードを入力"
-              />
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400"
-            >
-              {isLoading ? "ログイン中..." : "ログイン"}
-            </button>
-          </div>
-        </form>
-
-        <div className="flex justify-between items-center mt-4">
-          <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
-            トップページに戻る
-          </Link>
-          <button onClick={handleSetup} disabled={isLoading} className="text-sm text-green-600 hover:text-green-800">
+        <div className="mt-6">
+          <Button variant="outline" size="sm" onClick={handleSetup} className="w-full">
             初期データセットアップ
-          </button>
+          </Button>
+          {setupStatus && (
+            <Alert className="mt-2">
+              <AlertDescription>{setupStatus}</AlertDescription>
+            </Alert>
+          )}
         </div>
 
-        <div className="text-center mt-4 text-sm text-gray-500">
+        {debugInfo && (
+          <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-md text-xs overflow-auto">
+            <h3 className="font-bold mb-2">デバッグ情報:</h3>
+            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+          </div>
+        )}
+
+        <div className="mt-6 text-center text-sm text-gray-500">
           <p>緊急用ログイン: admin / admin123</p>
-          <p className="mt-1">または elt10 / elt10 など</p>
         </div>
       </div>
     </div>
