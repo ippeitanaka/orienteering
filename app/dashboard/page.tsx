@@ -268,7 +268,7 @@ export default function Dashboard() {
 
       <footer className="bg-muted py-6 mt-8">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} ELT学外オリエンテーション</p>
+          <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
         </div>
       </footer>
     </div>

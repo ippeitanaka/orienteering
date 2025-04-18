@@ -16,7 +16,7 @@ export default function QRCodeDisplay({ checkpoint, onClose }: QRCodeDisplayProp
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
 
   useEffect(() => {
-    const url = generateQRCodeUrl(checkpoint.id)
+    const url = generateQRCodeUrl(checkpoint.id.toString())
     setQrCodeUrl(url)
 
     QRCode.toDataURL(url, {

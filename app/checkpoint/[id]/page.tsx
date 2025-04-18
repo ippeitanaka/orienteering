@@ -5,69 +5,112 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { CheckCircle, AlertCircle } from "lucide-react"
+import { CheckCircle, AlertCircle, RefreshCw } from "lucide-react"
 
 export default function CheckpointPage({ params }: { params: { id: string } }) {
   const [checkpoint, setCheckpoint] = useState<any>(null)
   const [team, setTeam] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [checkinLoading, setCheckinLoading] = useState(false)
   const [checkinStatus, setCheckinStatus] = useState<{
     success?: boolean
     message?: string
+    debug?: any
   } | null>(null)
   const [alreadyCheckedIn, setAlreadyCheckedIn] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string>("")
   const router = useRouter()
 
+  // デバッグ情報を追加する関数
+  const addDebugInfo = (message: string) => {
+    setDebugInfo((prev) => `${prev}\n${new Date().toISOString().split("T")[1]}: ${message}`)
+    console.log(message)
+  }
+
   useEffect(() => {
+    addDebugInfo(`Checkpoint page loaded with ID: ${params.id}`)
+
+    // チェックポイントIDが数値かどうか確認
+    if (!/^\d+$/.test(params.id)) {
+      addDebugInfo(`Invalid checkpoint ID format: ${params.id}`)
+      setLoading(false)
+      setCheckinStatus({
+        success: false,
+        message: "無効なチェックポイントIDです。数値のみ使用できます。",
+      })
+      return
+    }
+
     const teamId = localStorage.getItem("teamId")
     if (!teamId) {
+      addDebugInfo("No teamId found in localStorage, redirecting to login")
       router.push("/team-login")
       return
     }
 
+    addDebugInfo(`TeamId found: ${teamId}, checkpoint: ${params.id}`)
+
     async function fetchData() {
       try {
+        addDebugInfo("Fetching checkpoint data...")
         // チェックポイント情報を取得
         const checkpointResponse = await fetch(`/api/checkpoints/${params.id}`)
 
         if (!checkpointResponse.ok) {
-          console.error("Failed to fetch checkpoint:", await checkpointResponse.text())
-          router.push("/dashboard")
+          const errorText = await checkpointResponse.text()
+          addDebugInfo(`Failed to fetch checkpoint: ${errorText}`)
+          setLoading(false)
+          setCheckinStatus({
+            success: false,
+            message: "チェックポイントの取得に失敗しました。",
+            debug: { status: checkpointResponse.status, error: errorText },
+          })
           return
         }
 
         const checkpointData = await checkpointResponse.json()
-        console.log("Checkpoint data:", checkpointData)
+        addDebugInfo(`Checkpoint data: ${JSON.stringify(checkpointData)}`)
         setCheckpoint(checkpointData.data)
 
+        addDebugInfo("Fetching team data...")
         // チーム情報を取得
         const teamResponse = await fetch(`/api/teams/${teamId}`)
 
         if (!teamResponse.ok) {
-          console.error("Failed to fetch team:", await teamResponse.text())
+          const errorText = await teamResponse.text()
+          addDebugInfo(`Failed to fetch team: ${errorText}`)
           router.push("/team-login")
           return
         }
 
         const teamData = await teamResponse.json()
-        console.log("Team data:", teamData)
+        addDebugInfo(`Team data: ${JSON.stringify(teamData)}`)
         setTeam(teamData.data)
 
+        addDebugInfo("Checking if already checked in...")
         // 既にチェックイン済みかチェック
         const checkinsResponse = await fetch(`/api/teams/${teamId}/checkins`)
         const checkinsData = await checkinsResponse.json()
-        console.log("Checkins data:", checkinsData)
+        addDebugInfo(`Checkins data: ${JSON.stringify(checkinsData)}`)
 
         const existingCheckin = checkinsData.data?.find((checkin: any) => checkin.checkpoint_id === Number(params.id))
 
         if (existingCheckin) {
+          addDebugInfo(`Already checked in: ${JSON.stringify(existingCheckin)}`)
           setAlreadyCheckedIn(true)
+        } else {
+          addDebugInfo("Not checked in yet")
         }
 
         setLoading(false)
       } catch (err) {
-        console.error("Error in checkpoint page:", err)
+        addDebugInfo(`Error in checkpoint page: ${err}`)
         setLoading(false)
+        setCheckinStatus({
+          success: false,
+          message: "データの取得中にエラーが発生しました。",
+          debug: { error: String(err) },
+        })
       }
     }
 
@@ -75,9 +118,14 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
   }, [params.id, router])
 
   const handleCheckin = async () => {
-    if (!team || !checkpoint) return
+    if (!team || !checkpoint) {
+      addDebugInfo("Team or checkpoint data missing")
+      return
+    }
 
-    setLoading(true)
+    setCheckinLoading(true)
+    addDebugInfo(`Attempting checkin: teamId=${team.id}, checkpointId=${checkpoint.id}`)
+
     try {
       // チェックインAPIを直接呼び出す
       const response = await fetch("/api/checkin", {
@@ -91,28 +139,46 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
         }),
       })
 
-      const result = await response.json()
-      setCheckinStatus(result)
-      setLoading(false)
+      const responseText = await response.text()
+      addDebugInfo(`Checkin API response: ${responseText}`)
 
-      if (result.success) {
-        setAlreadyCheckedIn(true)
+      try {
+        const result = JSON.parse(responseText)
+        setCheckinStatus(result)
 
-        // チーム情報を更新
-        const teamResponse = await fetch(`/api/teams/${team.id}`)
-        const teamData = await teamResponse.json()
+        if (result.success) {
+          addDebugInfo("Checkin successful")
+          setAlreadyCheckedIn(true)
 
-        if (teamData.data) {
-          setTeam(teamData.data)
+          // チーム情報を更新
+          addDebugInfo("Updating team info...")
+          const teamResponse = await fetch(`/api/teams/${team.id}`)
+          const teamData = await teamResponse.json()
+          addDebugInfo(`Updated team data: ${JSON.stringify(teamData)}`)
+
+          if (teamData.data) {
+            setTeam(teamData.data)
+          }
+        } else {
+          addDebugInfo(`Checkin failed: ${result.message}`)
         }
+      } catch (e) {
+        addDebugInfo(`Error parsing checkin response: ${e}, response: ${responseText}`)
+        setCheckinStatus({
+          success: false,
+          message: "チェックイン結果の解析に失敗しました",
+          debug: { error: String(e), response: responseText },
+        })
       }
     } catch (error) {
-      console.error("Error checking in:", error)
+      addDebugInfo(`Error during checkin: ${error}`)
       setCheckinStatus({
         success: false,
         message: "チェックイン処理中にエラーが発生しました",
+        debug: { error: String(error) },
       })
-      setLoading(false)
+    } finally {
+      setCheckinLoading(false)
     }
   }
 
@@ -129,15 +195,35 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (!checkpoint || !team) {
+  if (!checkpoint) {
     return (
       <div className="min-h-screen cute-bg flex items-center justify-center">
-        <div className="text-center">
-          <p className="mb-4 font-heading">チェックポイントが見つかりません</p>
-          <Button onClick={() => router.push("/dashboard")} className="cute-button">
-            ダッシュボードに戻る
-          </Button>
-        </div>
+        <Card className="max-w-md mx-auto cute-card border-primary/30 overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
+          <CardHeader>
+            <CardTitle className="text-2xl font-heading text-primary">チェックポイントが見つかりません</CardTitle>
+            <CardDescription>チェックポイントID: {params.id}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {checkinStatus && (
+              <Alert variant="destructive" className="mt-4 rounded-xl border-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>エラー</AlertTitle>
+                <AlertDescription>{checkinStatus.message}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="mt-4 p-4 bg-white/80 rounded-lg text-xs text-left">
+              <p className="font-bold mb-2">デバッグ情報:</p>
+              <pre className="whitespace-pre-wrap">{debugInfo}</pre>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => router.push("/dashboard")} className="w-full cute-button">
+              ダッシュボードに戻る
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     )
   }
@@ -183,15 +269,36 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
             )}
           </CardContent>
           <CardFooter>
-            <Button className="w-full cute-button" onClick={handleCheckin} disabled={loading || alreadyCheckedIn}>
-              {alreadyCheckedIn ? "チェックイン済み" : loading ? "処理中..." : "チェックイン"}
+            <Button
+              className="w-full cute-button"
+              onClick={handleCheckin}
+              disabled={checkinLoading || alreadyCheckedIn}
+            >
+              {alreadyCheckedIn ? (
+                "チェックイン済み"
+              ) : checkinLoading ? (
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  処理中...
+                </span>
+              ) : (
+                "チェックイン"
+              )}
             </Button>
           </CardFooter>
         </Card>
+
+        {/* デバッグ情報 */}
+        <div className="mt-8 max-w-md mx-auto">
+          <details className="bg-white/80 p-4 rounded-lg text-xs">
+            <summary className="font-bold cursor-pointer">デバッグ情報</summary>
+            <pre className="mt-2 whitespace-pre-wrap overflow-auto max-h-60">{debugInfo}</pre>
+          </details>
+        </div>
       </main>
 
       <footer className="bg-muted p-4 text-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} ELT学外オリエンテーション</p>
+        <p>© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
       </footer>
     </div>
   )

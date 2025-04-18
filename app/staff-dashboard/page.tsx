@@ -154,7 +154,7 @@ export default function StaffDashboardPage() {
         </Tabs>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} ELT学外オリエンテーション</p>
+          <p>© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@ const bubblegum = Bubblegum_Sans({
 
 export const metadata: Metadata = {
   title: "ELT学外オリエンテーション",
-  description: "東洋大学英語コミュニケーション学科のオリエンテーリングアプリ",
+  description: "東洋医療専門学校　救急救命士学科のオリエンテーリングアプリ",
     generator: 'v0.dev'
 }
 

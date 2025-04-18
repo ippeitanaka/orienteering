@@ -4,22 +4,54 @@ import { supabaseServer } from "@/lib/supabase-server"
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     if (!supabaseServer) {
-      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
+      console.error("Supabase server client is not available")
+      return NextResponse.json(
+        {
+          error: "Database connection not available",
+          debug: { message: "supabaseServer is null" },
+        },
+        { status: 500 },
+      )
     }
 
     const teamId = params.id
+    console.log("Fetching team with ID:", teamId)
 
     const { data, error } = await supabaseServer.from("teams").select("*").eq("id", teamId).single()
 
     if (error) {
       console.error("Error fetching team:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: error.message,
+          debug: { error },
+        },
+        { status: 500 },
+      )
     }
 
+    if (!data) {
+      console.error("Team not found:", teamId)
+      return NextResponse.json(
+        {
+          error: "Team not found",
+          debug: { teamId },
+        },
+        { status: 404 },
+      )
+    }
+
+    console.log("Team found:", data)
     return NextResponse.json({ data })
   } catch (error) {
     console.error("Error in GET /api/teams/[id]:", error)
-    return NextResponse.json({ error: "Failed to fetch team" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to fetch team",
+        debug: { error: error instanceof Error ? error.message : String(error) },
+      },
+      { status: 500 },
+    )
   }
 }
 

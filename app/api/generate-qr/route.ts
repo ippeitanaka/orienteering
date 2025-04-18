@@ -20,6 +20,8 @@ export async function GET(request: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://your-app-url.com"
   const qrUrl = `${appUrl}/checkpoint/${checkpointId}`
 
+  console.log("Generated QR URL:", qrUrl)
+
   return NextResponse.json({
     checkpointId,
     checkpointName: checkpoint.name,

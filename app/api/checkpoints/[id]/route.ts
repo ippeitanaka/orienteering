@@ -4,29 +4,66 @@ import { supabaseServer } from "@/lib/supabase-server"
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     if (!supabaseServer) {
-      return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
+      console.error("Supabase server client is not available")
+      return NextResponse.json(
+        {
+          error: "Database connection not available",
+          debug: { message: "supabaseServer is null" },
+        },
+        { status: 500 },
+      )
     }
 
     const checkpointId = params.id
-
     console.log("Fetching checkpoint with ID:", checkpointId)
+
+    // チェックポイントIDが数値かどうか確認
+    if (!/^\d+$/.test(checkpointId)) {
+      console.error("Invalid checkpoint ID format:", checkpointId)
+      return NextResponse.json(
+        {
+          error: "Invalid checkpoint ID format. Must be a number.",
+          debug: { id: checkpointId },
+        },
+        { status: 400 },
+      )
+    }
 
     const { data, error } = await supabaseServer.from("checkpoints").select("*").eq("id", checkpointId).single()
 
     if (error) {
       console.error("Error fetching checkpoint:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: error.message,
+          debug: { error, checkpointId },
+        },
+        { status: 500 },
+      )
     }
 
     if (!data) {
-      return NextResponse.json({ error: "Checkpoint not found" }, { status: 404 })
+      console.error("Checkpoint not found:", checkpointId)
+      return NextResponse.json(
+        {
+          error: "Checkpoint not found",
+          debug: { checkpointId },
+        },
+        { status: 404 },
+      )
     }
 
     console.log("Checkpoint found:", data)
     return NextResponse.json({ data })
   } catch (error) {
     console.error("Error in GET /api/checkpoints/[id]:", error)
-    return NextResponse.json({ error: "Failed to fetch checkpoint" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Failed to fetch checkpoint",
+        debug: { error: error instanceof Error ? error.message : String(error) },
+      },
+      { status: 500 },
+    )
   }
 }
 

@@ -106,7 +106,7 @@ export default function DebugEnvPage() {
       </main>
 
       <footer className="bg-muted p-4 text-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} ELT学外オリエンテーション</p>
+        <p>© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
       </footer>
     </div>
   )

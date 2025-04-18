@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,14 +26,24 @@ export default function QRScanner() {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isMounted, setIsMounted] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<string>("")
+  const [lastScannedText, setLastScannedText] = useState<string>("")
   const router = useRouter()
+
+  // デバッグ情報を追加する関数
+  const addDebugInfo = (message: string) => {
+    setDebugInfo((prev) => `${prev}\n${new Date().toISOString().split("T")[1]}: ${message}`)
+    console.log(message)
+  }
 
   useEffect(() => {
     setIsMounted(true)
+    addDebugInfo("QR Scanner component mounted")
   }, [])
 
   const handleScanSuccess = (decodedText: string) => {
-    console.log("QR code scanned:", decodedText)
+    addDebugInfo(`QR code scanned: ${decodedText}`)
+    setLastScannedText(decodedText)
     setScanning(false)
 
     try {
@@ -40,44 +52,78 @@ export default function QRScanner() {
 
       // URLの場合
       if (decodedText.startsWith("http")) {
-        const url = new URL(decodedText)
-        const path = url.pathname
+        addDebugInfo("Detected URL format")
 
-        // /checkpoint/{id} 形式のURLの場合
-        const match = path.match(/\/checkpoint\/(\d+)/)
-        if (match && match[1]) {
-          checkpointId = match[1]
-        } else {
-          // クエリパラメータからcheckpointを取得
-          checkpointId = url.searchParams.get("checkpoint")
+        try {
+          const url = new URL(decodedText)
+          addDebugInfo(`Parsed URL: ${url.toString()}`)
+          addDebugInfo(`Path: ${url.pathname}`)
+
+          // /checkpoint/{id} 形式のURLの場合
+          const match = url.pathname.match(/\/checkpoint\/(\d+)/)
+          if (match && match[1]) {
+            checkpointId = match[1]
+            addDebugInfo(`Extracted checkpoint ID from path: ${checkpointId}`)
+          } else {
+            // クエリパラメータからcheckpointを取得
+            checkpointId = url.searchParams.get("checkpoint")
+            addDebugInfo(`Extracted checkpoint ID from query: ${checkpointId}`)
+          }
+        } catch (urlError) {
+          addDebugInfo(`URL parsing error: ${urlError}`)
+
+          // URLのパース失敗時に直接パスを抽出する試み
+          const pathMatch = decodedText.match(/\/checkpoint\/(\d+)/)
+          if (pathMatch && pathMatch[1]) {
+            checkpointId = pathMatch[1]
+            addDebugInfo(`Extracted checkpoint ID from raw path: ${checkpointId}`)
+          }
         }
       } else {
         // 数字のみの場合は直接チェックポイントIDとして扱う
         if (/^\d+$/.test(decodedText)) {
           checkpointId = decodedText
+          addDebugInfo(`Using raw numeric value as checkpoint ID: ${checkpointId}`)
         }
       }
 
       if (checkpointId) {
-        console.log("Navigating to checkpoint:", checkpointId)
+        addDebugInfo(`Navigating to checkpoint: ${checkpointId}`)
         // チェックポイントページに遷移
         router.push(`/checkpoint/${checkpointId}`)
       } else {
+        addDebugInfo("No checkpoint ID found in QR code")
         setError("無効なQRコードです。チェックポイントIDが含まれていません。")
       }
     } catch (err) {
-      console.error("QR code parsing error:", err)
+      addDebugInfo(`Error parsing QR code: ${err}`)
       setError("無効なQRコードです。正しいURLではありません。")
     }
   }
 
   const handleScanError = (error: any) => {
-    console.error("QRコードのスキャンエラー:", error)
+    addDebugInfo(`QR scan error: ${error}`)
   }
 
   const handleScanFailure = (errorMessage: string) => {
+    addDebugInfo(`QR scan failure: ${errorMessage}`)
     setError(errorMessage)
     setScanning(false)
+  }
+
+  // 手動でチェックポイントIDを入力する処理
+  const handleManualEntry = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const input = form.elements.namedItem("checkpointId") as HTMLInputElement
+    const id = input.value.trim()
+
+    if (id && /^\d+$/.test(id)) {
+      addDebugInfo(`Manually entered checkpoint ID: ${id}`)
+      router.push(`/checkpoint/${id}`)
+    } else {
+      setError("有効なチェックポイントIDを入力してください（数字のみ）")
+    }
   }
 
   // サーバーサイドレンダリング時は何も表示しない
@@ -164,6 +210,36 @@ export default function QRScanner() {
             </div>
           </div>
         )}
+
+        {/* 手動入力フォーム */}
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+          <h3 className="text-sm font-medium mb-2">チェックポイントIDを手動入力</h3>
+          <form onSubmit={handleManualEntry} className="flex gap-2">
+            <input
+              type="text"
+              name="checkpointId"
+              placeholder="チェックポイントID"
+              className="flex-1 px-3 py-2 rounded-md border border-input bg-background"
+            />
+            <Button type="submit" size="sm">
+              移動
+            </Button>
+          </form>
+        </div>
+
+        {/* 最後にスキャンしたQRコードの内容 */}
+        {lastScannedText && (
+          <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+            <h3 className="text-sm font-medium mb-1">最後にスキャンしたQRコード:</h3>
+            <p className="text-xs break-all">{lastScannedText}</p>
+          </div>
+        )}
+
+        {/* デバッグ情報 */}
+        <details className="mt-4 text-xs">
+          <summary className="cursor-pointer text-muted-foreground">デバッグ情報</summary>
+          <pre className="mt-2 p-2 bg-muted/30 rounded-md whitespace-pre-wrap overflow-auto max-h-40">{debugInfo}</pre>
+        </details>
       </CardContent>
       <CardFooter className="flex justify-center pt-2 pb-4">
         {!scanning ? (
@@ -171,6 +247,7 @@ export default function QRScanner() {
             onClick={() => {
               setScanning(true)
               setError(null)
+              addDebugInfo("Scan started")
             }}
             className="cute-button flex items-center gap-2 px-6"
           >
@@ -180,7 +257,10 @@ export default function QRScanner() {
         ) : (
           <Button
             variant="outline"
-            onClick={() => setScanning(false)}
+            onClick={() => {
+              setScanning(false)
+              addDebugInfo("Scan stopped")
+            }}
             className="rounded-full border-primary/30 hover:bg-primary/10"
           >
             スキャンを停止

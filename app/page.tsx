@@ -8,7 +8,7 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">ELT学外オリエンテーション</h1>
-          <p className="text-gray-600 dark:text-gray-300">東洋大学 英語コミュニケーション学科</p>
+          <p className="text-gray-600 dark:text-gray-300">東洋医療専門学校　救急救命士学科</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
@@ -75,7 +75,7 @@ export default function Home() {
         </div>
 
         <footer className="text-center mt-12 text-gray-500 dark:text-gray-400 text-sm">
-          <p>© 2025 東洋大学 英語コミュニケーション学科</p>
+          <p>© 2025 東洋医療専門学校　救急救命士学科</p>
           <p className="mt-1">ELT学外オリエンテーション</p>
         </footer>
       </div>

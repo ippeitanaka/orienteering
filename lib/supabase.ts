@@ -169,17 +169,32 @@ export async function staffCheckInTeam(
   }
 
   // チームのスコアを更新
-  const { error: updateError } = await supabase.rpc("increment_team_score", {
-    p_team_id: teamId,
-    p_score: points,
-  })
+  const { data: team, error: teamError } = await supabase.from("teams").select("total_score").eq("id", teamId).single()
+
+  if (teamError) {
+    console.error("Error fetching team:", teamError)
+    return { success: false, message: "チーム情報の取得に失敗しました" }
+  }
+
+  // 現在のスコアを確実に数値として扱う
+  const currentScore =
+    typeof team.total_score === "string" ? Number.parseInt(team.total_score, 10) : team.total_score || 0
+
+  if (isNaN(currentScore)) {
+    console.error("Invalid current score:", team.total_score)
+  }
+
+  const newScore = currentScore + points
+
+  // スコアを更新
+  const { error: updateError } = await supabase.from("teams").update({ total_score: newScore }).eq("id", teamId)
 
   if (updateError) {
     console.error("Error updating team score:", updateError)
     return { success: false, message: "スコア更新に失敗しました" }
   }
 
-  return { success: true, message: "チェックインが完了しました！" }
+  return { success: true, message: `チェックインが完了しました！${points}ポイント獲得しました！` }
 }
 
 // チェックポイント関連の関数を修正
@@ -238,7 +253,7 @@ export async function updateCheckpoint(
 }
 
 export function generateQRCodeUrl(checkpointId: string): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://your-app-url.com"
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
   return `${appUrl}/checkpoint/${checkpointId}`
 }
 
@@ -280,18 +295,55 @@ export async function checkInTeam(
       return { success: false, message: "チェックインに失敗しました" }
     }
 
+    // ポイント値を数値に変換
+    let pointValue = 0
+    try {
+      // point_valueが文字列か数値かに関わらず適切に処理
+      pointValue =
+        typeof checkpoint.point_value === "string"
+          ? Number.parseInt(checkpoint.point_value, 10)
+          : checkpoint.point_value || 0
+
+      if (isNaN(pointValue)) {
+        console.error("Invalid point value:", checkpoint.point_value)
+        pointValue = 0
+      }
+    } catch (e) {
+      console.error("Error parsing point value:", e)
+      pointValue = 0
+    }
+
     // チームのスコアを更新
-    const { error: updateError } = await supabase.rpc("increment_team_score", {
-      p_team_id: teamId,
-      p_score: checkpoint.point_value,
-    })
+    const { data: team, error: teamError } = await supabase
+      .from("teams")
+      .select("total_score")
+      .eq("id", teamId)
+      .single()
+
+    if (teamError) {
+      console.error("Error fetching team:", teamError)
+      return { success: false, message: "チーム情報の取得に失敗しました" }
+    }
+
+    // 現在のスコアを確実に数値として扱う
+    const currentScore =
+      typeof team.total_score === "string" ? Number.parseInt(team.total_score, 10) : team.total_score || 0
+
+    if (isNaN(currentScore)) {
+      console.error("Invalid current score:", team.total_score)
+    }
+
+    const newScore = currentScore + pointValue
+
+    // スコアを更新
+    const { error: updateError } = await supabase.from("teams").update({ total_score: newScore }).eq("id", teamId)
 
     if (updateError) {
       console.error("Error updating team score:", updateError)
       return { success: false, message: "スコア更新に失敗しました" }
     }
 
-    return { success: true, message: "チェックインが完了しました！" }
+    return { success: true, message: `チェックインが完了しました！${pointValue}ポイント獲得しました！` }
   } catch (error) {
     console.error("Error in checkInTeam function:", error)
     return { success: false, message: "チェックイン処理中にエラーが発生しました" }
