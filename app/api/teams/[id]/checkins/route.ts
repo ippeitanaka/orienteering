@@ -8,6 +8,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const teamId = params.id
+    console.log("Fetching checkins for team ID:", teamId)
 
     const { data, error } = await supabaseServer.from("checkins").select("*, checkpoints(*)").eq("team_id", teamId)
 
@@ -16,7 +17,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ data })
+    console.log("Found checkins:", data?.length || 0)
+    return NextResponse.json({ data: data || [] })
   } catch (error) {
     console.error("Error in GET /api/teams/[id]/checkins:", error)
     return NextResponse.json({ error: "Failed to fetch team checkins" }, { status: 500 })

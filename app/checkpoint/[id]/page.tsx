@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircle, AlertCircle } from "lucide-react"
-import { checkInTeam } from "@/lib/supabase"
 
 export default function CheckpointPage({ params }: { params: { id: string } }) {
   const [checkpoint, setCheckpoint] = useState<any>(null)
@@ -22,7 +21,7 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const teamId = localStorage.getItem("teamId")
     if (!teamId) {
-      router.push("/")
+      router.push("/team-login")
       return
     }
 
@@ -32,31 +31,34 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
         const checkpointResponse = await fetch(`/api/checkpoints/${params.id}`)
 
         if (!checkpointResponse.ok) {
-          console.error("Failed to fetch checkpoint")
+          console.error("Failed to fetch checkpoint:", await checkpointResponse.text())
           router.push("/dashboard")
           return
         }
 
         const checkpointData = await checkpointResponse.json()
+        console.log("Checkpoint data:", checkpointData)
         setCheckpoint(checkpointData.data)
 
         // チーム情報を取得
         const teamResponse = await fetch(`/api/teams/${teamId}`)
 
         if (!teamResponse.ok) {
-          console.error("Failed to fetch team")
-          router.push("/")
+          console.error("Failed to fetch team:", await teamResponse.text())
+          router.push("/team-login")
           return
         }
 
         const teamData = await teamResponse.json()
+        console.log("Team data:", teamData)
         setTeam(teamData.data)
 
         // 既にチェックイン済みかチェック
         const checkinsResponse = await fetch(`/api/teams/${teamId}/checkins`)
         const checkinsData = await checkinsResponse.json()
+        console.log("Checkins data:", checkinsData)
 
-        const existingCheckin = checkinsData.data.find((checkin: any) => checkin.checkpoint_id === Number(params.id))
+        const existingCheckin = checkinsData.data?.find((checkin: any) => checkin.checkpoint_id === Number(params.id))
 
         if (existingCheckin) {
           setAlreadyCheckedIn(true)
@@ -76,20 +78,41 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
     if (!team || !checkpoint) return
 
     setLoading(true)
-    const result = await checkInTeam(team.id, checkpoint.id)
-    setCheckinStatus(result)
-    setLoading(false)
+    try {
+      // チェックインAPIを直接呼び出す
+      const response = await fetch("/api/checkin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teamId: team.id,
+          checkpointId: checkpoint.id,
+        }),
+      })
 
-    if (result.success) {
-      setAlreadyCheckedIn(true)
+      const result = await response.json()
+      setCheckinStatus(result)
+      setLoading(false)
 
-      // チーム情報を更新
-      const teamResponse = await fetch(`/api/teams/${team.id}`)
-      const teamData = await teamResponse.json()
+      if (result.success) {
+        setAlreadyCheckedIn(true)
 
-      if (teamData.data) {
-        setTeam(teamData.data)
+        // チーム情報を更新
+        const teamResponse = await fetch(`/api/teams/${team.id}`)
+        const teamData = await teamResponse.json()
+
+        if (teamData.data) {
+          setTeam(teamData.data)
+        }
       }
+    } catch (error) {
+      console.error("Error checking in:", error)
+      setCheckinStatus({
+        success: false,
+        message: "チェックイン処理中にエラーが発生しました",
+      })
+      setLoading(false)
     }
   }
 
@@ -143,7 +166,7 @@ export default function CheckpointPage({ params }: { params: { id: string } }) {
           <CardContent className="space-y-4">
             <div className="bg-muted p-4 rounded-lg">
               <h3 className="font-bold mb-2 font-heading">ミッション内容</h3>
-              <p>{checkpoint.description}</p>
+              <p>{checkpoint.description || "このチェックポイントにチェックインしてポイントを獲得しましょう！"}</p>
             </div>
 
             <div className="bg-muted p-4 rounded-lg">

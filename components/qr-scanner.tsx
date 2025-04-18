@@ -31,21 +31,42 @@ export default function QRScanner() {
   }, [])
 
   const handleScanSuccess = (decodedText: string) => {
+    console.log("QR code scanned:", decodedText)
     setScanning(false)
 
     try {
       // QRコードのURLをパース
-      const url = new URL(decodedText)
-      const path = url.pathname
-      const checkpointId = path.split("/").pop() || url.searchParams.get("checkpoint")
+      let checkpointId: string | null = null
+
+      // URLの場合
+      if (decodedText.startsWith("http")) {
+        const url = new URL(decodedText)
+        const path = url.pathname
+
+        // /checkpoint/{id} 形式のURLの場合
+        const match = path.match(/\/checkpoint\/(\d+)/)
+        if (match && match[1]) {
+          checkpointId = match[1]
+        } else {
+          // クエリパラメータからcheckpointを取得
+          checkpointId = url.searchParams.get("checkpoint")
+        }
+      } else {
+        // 数字のみの場合は直接チェックポイントIDとして扱う
+        if (/^\d+$/.test(decodedText)) {
+          checkpointId = decodedText
+        }
+      }
 
       if (checkpointId) {
+        console.log("Navigating to checkpoint:", checkpointId)
         // チェックポイントページに遷移
         router.push(`/checkpoint/${checkpointId}`)
       } else {
         setError("無効なQRコードです。チェックポイントIDが含まれていません。")
       }
     } catch (err) {
+      console.error("QR code parsing error:", err)
       setError("無効なQRコードです。正しいURLではありません。")
     }
   }

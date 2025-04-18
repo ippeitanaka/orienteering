@@ -9,6 +9,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
     const checkpointId = params.id
 
+    console.log("Fetching checkpoint with ID:", checkpointId)
+
     const { data, error } = await supabaseServer.from("checkpoints").select("*").eq("id", checkpointId).single()
 
     if (error) {
@@ -16,6 +18,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    if (!data) {
+      return NextResponse.json({ error: "Checkpoint not found" }, { status: 404 })
+    }
+
+    console.log("Checkpoint found:", data)
     return NextResponse.json({ data })
   } catch (error) {
     console.error("Error in GET /api/checkpoints/[id]:", error)
