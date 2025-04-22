@@ -4,65 +4,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
-
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 7%;
-
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 70%;
-
-    --accent: 0 0% 25%;
-    --accent-foreground: 0 0% 98%;
-
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 80%;
-
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
     --radius: 0.5rem;
   }
 
-  .light {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 7%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-
-    --primary: 0 0% 7%;
-    --primary-foreground: 0 0% 98%;
-
-    --secondary: 0 0% 85%;
-    --secondary-foreground: 0 0% 7%;
-
-    --muted: 0 0% 90%;
-    --muted-foreground: 0 0% 40%;
-
-    --accent: 0 0% 80%;
-    --accent-foreground: 0 0% 7%;
-
-    --destructive: 0 84.2% 60.2%;
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 80%;
-    --input: 0 0% 80%;
-    --ring: 0 0% 7%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 }
 
@@ -71,17 +54,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
-    font-feature-settings: "palt" 1;
-  }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-heading font-bold tracking-tight;
-    letter-spacing: 0.02em;
+    @apply bg-background text-foreground;
   }
 }
 
@@ -92,15 +65,15 @@
   }
 
   .elt-card {
-    @apply bg-card text-card-foreground rounded-md border border-border/50 shadow-elt-sharp transition-all hover:shadow-elt-glow;
+    @apply border-zinc-800 bg-zinc-900 text-white;
   }
 
   .elt-button {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm font-medium transition-all;
+    @apply bg-white text-black hover:bg-gray-200;
   }
 
   .elt-input {
-    @apply bg-background border border-input rounded-sm focus:border-primary focus:ring-1 focus:ring-primary;
+    @apply bg-zinc-800 border-zinc-700 text-white;
   }
 
   .elt-badge {
@@ -116,7 +89,7 @@
   }
 
   .elt-logo {
-    @apply h-auto w-auto max-h-12;
+    @apply object-contain;
   }
 
   .elt-nav-item {
@@ -140,41 +113,40 @@
   }
 
   .elt-bg {
-    background-color: hsl(var(--background));
-    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 20px 20px;
   }
 }
 
-/* アニメーション */
-.slide-in {
-  animation: slide-up 0.6s ease-out forwards;
+/* モダンなスクロールバー */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.slide-in.delay-100 {
-  animation-delay: 0.1s;
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.slide-in.delay-200 {
-  animation-delay: 0.2s;
-}
-
-/* スクロールバーのスタイル */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 2px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* アニメーション効果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
 }

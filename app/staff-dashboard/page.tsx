@@ -18,25 +18,32 @@ export default function StaffDashboardPage() {
   const [staffName, setStaffName] = useState<string>("管理者")
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     // スタッフセッションを確認
     async function checkStaffSession() {
       try {
+        console.log("スタッフセッションチェック開始")
         const response = await fetch("/api/staff/session")
         const data = await response.json()
+        console.log("セッションチェック結果:", data)
 
         if (!data.authenticated) {
+          console.log("認証されていないため、ログインページにリダイレクト")
           router.push("/staff-login")
-          return
+          return false
         }
 
         if (data.staff) {
+          console.log("スタッフ名を設定:", data.staff.name)
           setStaffName(data.staff.name)
         }
+        return true
       } catch (err) {
         console.error("Session check error:", err)
+        return false
       }
     }
 
@@ -52,13 +59,52 @@ export default function StaffDashboardPage() {
       }
     }
 
-    checkStaffSession()
-    fetchTeams()
-  }, [router])
+    // ローカルストレージからスタッフ情報を確認する処理を追加
+    function checkLocalStorage() {
+      const staffId = localStorage.getItem("staffId")
+      const name = localStorage.getItem("staffName")
+      console.log("ローカルストレージのスタッフ情報:", { staffId, name })
+
+      if (staffId && name) {
+        console.log("ローカルストレージからスタッフ名を設定:", name)
+        setStaffName(name)
+        return true
+      }
+      return false
+    }
+
+    // 初期化処理を一度だけ実行
+    if (!initialized) {
+      const init = async () => {
+        // まずローカルストレージを確認
+        const hasLocalData = checkLocalStorage()
+
+        // APIでのセッションチェック
+        const sessionValid = await checkStaffSession()
+
+        // 両方失敗した場合のみリダイレクト
+        if (!hasLocalData && !sessionValid) {
+          console.log("認証情報がないため、ログインページにリダイレクト")
+          router.push("/staff-login")
+          return
+        }
+
+        // チームデータを取得
+        await fetchTeams()
+        setInitialized(true)
+      }
+
+      init()
+    }
+  }, [router, initialized])
 
   const handleLogout = async () => {
     try {
       await fetch("/api/staff/logout", { method: "POST" })
+      // ローカルストレージもクリア
+      localStorage.removeItem("staffId")
+      localStorage.removeItem("staffName")
+      localStorage.removeItem("staffCheckpointId")
       router.push("/staff-login")
     } catch (err) {
       console.error("Logout error:", err)
@@ -72,6 +118,18 @@ export default function StaffDashboardPage() {
     } catch (err) {
       console.error("Failed to fetch teams:", err)
     }
+  }
+
+  // 読み込み中はローディング表示
+  if (loading && !initialized) {
+    return (
+      <div className="elt-bg min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -20,7 +20,32 @@ export default function StaffLoginPage() {
   const [error, setError] = useState("")
   const [setupStatus, setSetupStatus] = useState<string | null>(null)
   const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [checkingSession, setCheckingSession] = useState(true)
   const router = useRouter()
+
+  // ページ読み込み時にセッションをチェック
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        console.log("ログインページでのセッションチェック開始")
+        const response = await fetch("/api/staff/session")
+        const data = await response.json()
+        console.log("セッションチェック結果:", data)
+
+        if (data.authenticated) {
+          console.log("既に認証済みのため、ダッシュボードにリダイレクト")
+          router.push("/staff-dashboard")
+          return
+        }
+      } catch (err) {
+        console.error("Session check error in login page:", err)
+      } finally {
+        setCheckingSession(false)
+      }
+    }
+
+    checkSession()
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +54,7 @@ export default function StaffLoginPage() {
     setDebugInfo(null)
 
     try {
-      console.log("Attempting staff login with:", { name, passcode })
+      console.log("スタッフログイン試行:", { name, passcode })
 
       const response = await fetch("/api/staff/auth", {
         method: "POST",
@@ -40,7 +65,7 @@ export default function StaffLoginPage() {
       })
 
       const data = await response.json()
-      console.log("Staff login response:", data)
+      console.log("ログインレスポンス:", data)
 
       if (!response.ok) {
         setError(data.error || "ログイン中にエラーが発生しました")
@@ -53,6 +78,10 @@ export default function StaffLoginPage() {
 
       // ログイン成功時にローカルストレージにスタッフ情報を保存
       if (data.data) {
+        console.log("ローカルストレージにスタッフ情報を保存:", {
+          id: data.data.id,
+          name: data.data.name,
+        })
         localStorage.setItem("staffId", data.data.id.toString())
         localStorage.setItem("staffName", data.data.name)
         if (data.data.checkpoint_id) {
@@ -60,8 +89,11 @@ export default function StaffLoginPage() {
         }
       }
 
-      // スタッフダッシュボードにリダイレクト
-      router.push("/staff-dashboard")
+      // 1秒待機してからリダイレクト（Cookieの設定を確実にするため）
+      setTimeout(() => {
+        console.log("スタッフダッシュボードにリダイレクト")
+        router.push("/staff-dashboard")
+      }, 1000)
     } catch (err) {
       console.error("Login error:", err)
       setError("ログイン処理中にエラーが発生しました")
@@ -82,6 +114,18 @@ export default function StaffLoginPage() {
       console.error("Setup error:", err)
       setSetupStatus("セットアップ中にエラーが発生しました")
     }
+  }
+
+  // セッションチェック中は読み込み表示
+  if (checkingSession) {
+    return (
+      <div className="elt-bg min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">セッションを確認中...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

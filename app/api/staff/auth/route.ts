@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const requestData = await request.json()
     const { name, passcode } = requestData
 
-    console.log("Staff login attempt:", { name, passcode })
+    console.log("スタッフログイン試行:", { name, passcode: "***" })
 
     if (!name || !passcode) {
       return NextResponse.json(
@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     }
 
     if (!supabaseServer) {
+      console.error("Supabaseサーバー接続が利用できません")
       return NextResponse.json(
         {
           success: false,
@@ -37,10 +38,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // スタッフテーブルの全レコードを取得（デバッグ用）
-    const { data: allStaff, error: allStaffError } = await supabaseServer.from("staff").select("*")
-    console.log("All staff records:", allStaff?.length || 0, "Error:", allStaffError)
-
     // スタッフテーブルからユーザーを検索
     const { data: staff, error } = await supabaseServer
       .from("staff")
@@ -49,13 +46,18 @@ export async function POST(request: Request) {
       .eq("password", passcode)
       .single()
 
-    console.log("Staff query result:", { staff: staff ? "found" : "not found", error })
+    console.log("スタッフ検索結果:", { found: !!staff, error: !!error })
 
     // 緊急用のフォールバック認証
     if ((error || !staff) && name === "admin" && passcode === "admin123") {
-      console.log("Using emergency fallback authentication")
+      console.log("緊急フォールバック認証を使用")
 
-      // 認証成功時
+      const sessionData = {
+        staff_id: 999,
+        staff_name: "Admin",
+      }
+
+      // Cookieを設定
       cookies().set("staff_id", "999", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -72,21 +74,7 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 7, // 1週間
       })
 
-      // セッションCookieを設定
-      const session = {
-        staff_id: 999,
-        staff_name: "Admin",
-      }
-
-      const response = NextResponse.json({
-        success: true,
-        message: "緊急ログイン成功",
-        data: { id: 999, name: "Admin", password: "admin123", checkpoint_id: null },
-      })
-
-      response.cookies.set({
-        name: "staff_session",
-        value: JSON.stringify(session),
+      cookies().set("staff_session", JSON.stringify(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -94,26 +82,34 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 7, // 1週間
       })
 
-      return response
+      console.log("セッションCookieを設定済み(admin)")
+
+      return NextResponse.json({
+        success: true,
+        message: "緊急ログイン成功",
+        data: { id: 999, name: "Admin", checkpoint_id: null },
+      })
     }
 
     if (error || !staff) {
+      console.log("認証失敗:", error)
       return NextResponse.json(
         {
           success: false,
           error: "スタッフ名またはパスワードが正しくありません",
-          debug: {
-            queriedName: name,
-            staffCount: allStaff?.length || 0,
-            lastError: error,
-            allStaff: allStaff?.map((s) => ({ id: s.id, name: s.name })),
-          },
+          debug: { error },
         },
         { status: 401 },
       )
     }
 
     // 認証成功時
+    const sessionData = {
+      staff_id: staff.id,
+      staff_name: staff.name,
+    }
+
+    // Cookieを設定
     cookies().set("staff_id", staff.id.toString(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -130,21 +126,7 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24 * 7, // 1週間
     })
 
-    // セッションCookieを設定
-    const session = {
-      staff_id: staff.id,
-      staff_name: staff.name,
-    }
-
-    const response = NextResponse.json({
-      success: true,
-      message: "ログイン成功",
-      data: staff,
-    })
-
-    response.cookies.set({
-      name: "staff_session",
-      value: JSON.stringify(session),
+    cookies().set("staff_session", JSON.stringify(sessionData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -152,9 +134,15 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24 * 7, // 1週間
     })
 
-    return response
+    console.log("セッションCookieを設定済み:", staff.name)
+
+    return NextResponse.json({
+      success: true,
+      message: "ログイン成功",
+      data: staff,
+    })
   } catch (error) {
-    console.error("Staff login error:", error)
+    console.error("スタッフログインエラー:", error)
     return NextResponse.json(
       {
         success: false,
