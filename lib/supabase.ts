@@ -44,6 +44,14 @@ export interface Staff {
   checkpoint_id: number | null
 }
 
+export interface TimerSettings {
+  id?: number
+  created_at?: string
+  duration: number
+  end_time: string | null
+  is_running: boolean
+}
+
 export async function getCheckpoints(): Promise<Checkpoint[]> {
   try {
     // APIエンドポイントを使用してチェックポイントを取得
@@ -348,4 +356,89 @@ export async function checkInTeam(
 export const generateQRCodeUrl = (checkpointId: string): string => {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://your-app-url.com"
   return `${appUrl}/checkpoint/${checkpointId}`
+}
+
+// 既存のファイルに追加
+// タイマー関連の関数
+
+export async function getTimerSettings(): Promise<TimerSettings | null> {
+  try {
+    const { data, error } = await supabase
+      .from("timer_settings")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+
+    if (error) {
+      console.error("Error fetching timer settings:", error)
+      return null
+    }
+
+    return data
+  } catch (err) {
+    console.error("Failed to fetch timer settings:", err)
+    return null
+  }
+}
+
+export async function updateTimerSettings(settings: Partial<TimerSettings>): Promise<boolean> {
+  try {
+    // 既存のタイマー設定を取得
+    const { data: existingTimer } = await supabase
+      .from("timer_settings")
+      .select("id")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+
+    if (existingTimer) {
+      // 既存の設定を更新
+      const { error } = await supabase.from("timer_settings").update(settings).eq("id", existingTimer.id)
+
+      if (error) {
+        console.error("Error updating timer settings:", error)
+        return false
+      }
+      return true
+    } else {
+      // 新しい設定を作成
+      const { error } = await supabase.from("timer_settings").insert([settings])
+      if (error) {
+        console.error("Error creating timer settings:", error)
+        return false
+      }
+      return true
+    }
+  } catch (err) {
+    console.error("Failed to update timer settings:", err)
+    return false
+  }
+}
+
+export async function startTimer(durationInSeconds: number): Promise<boolean> {
+  try {
+    const endTime = new Date(Date.now() + durationInSeconds * 1000).toISOString()
+
+    return await updateTimerSettings({
+      duration: durationInSeconds,
+      end_time: endTime,
+      is_running: true,
+    })
+  } catch (err) {
+    console.error("Failed to start timer:", err)
+    return false
+  }
+}
+
+export async function stopTimer(): Promise<boolean> {
+  try {
+    return await updateTimerSettings({
+      is_running: false,
+      end_time: null,
+    })
+  } catch (err) {
+    console.error("Failed to stop timer:", err)
+    return false
+  }
 }

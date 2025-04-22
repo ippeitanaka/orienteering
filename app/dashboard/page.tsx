@@ -12,6 +12,7 @@ import Link from "next/link"
 import Scoreboard from "@/components/scoreboard"
 import dynamic from "next/dynamic"
 import SimpleFallbackMap from "@/components/simple-fallback-map"
+import CountdownTimer from "@/components/countdown-timer"
 
 // BasicMapをクライアントサイドのみで読み込む
 const BasicMap = dynamic(() => import("@/components/basic-map"), {
@@ -215,6 +216,11 @@ export default function Dashboard() {
                 <Users className="h-4 w-4" />
                 チーム変更
               </Button>
+            </div>
+
+            {/* カウントダウンタイマーを追加 */}
+            <div className="slide-in delay-50">
+              <CountdownTimer />
             </div>
 
             <Card className="glass-panel border-primary/30 overflow-hidden shadow-lg slide-in delay-100">
