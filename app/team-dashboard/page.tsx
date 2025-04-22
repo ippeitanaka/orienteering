@@ -111,9 +111,8 @@ export default function TeamDashboardPage() {
       </header>
 
       <Tabs defaultValue="map" className="w-full">
-        <TabsList className="grid grid-cols-3 mb-8">
+        <TabsList className="grid grid-cols-2 mb-8">
           <TabsTrigger value="map">マップ</TabsTrigger>
-          <TabsTrigger value="qr">QRスキャン</TabsTrigger>
           <TabsTrigger value="scoreboard">スコアボード</TabsTrigger>
         </TabsList>
 
@@ -125,18 +124,6 @@ export default function TeamDashboardPage() {
             </CardHeader>
             <CardContent>
               <p>マップ機能は開発中です。</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="qr">
-          <Card>
-            <CardHeader>
-              <CardTitle>QRスキャン</CardTitle>
-              <CardDescription>チェックポイントのQRコードをスキャンします</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>QRスキャン機能は開発中です。</p>
             </CardContent>
           </Card>
         </TabsContent>

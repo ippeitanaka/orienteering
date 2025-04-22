@@ -252,11 +252,6 @@ export async function updateCheckpoint(
   return { success: true, message: "チェックポイントを更新しました", data: data[0] }
 }
 
-export function generateQRCodeUrl(checkpointId: string): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-  return `${appUrl}/checkpoint/${checkpointId}`
-}
-
 export async function checkInTeam(
   teamId: number,
   checkpointId: number,
@@ -348,4 +343,9 @@ export async function checkInTeam(
     console.error("Error in checkInTeam function:", error)
     return { success: false, message: "チェックイン処理中にエラーが発生しました" }
   }
+}
+
+export const generateQRCodeUrl = (checkpointId: string): string => {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://your-app-url.com"
+  return `${appUrl}/checkpoint/${checkpointId}`
 }

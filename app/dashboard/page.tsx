@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button"
 import { getTeams, type Team } from "@/lib/supabase"
 import TeamSelector from "@/components/team-selector"
 import LocationTracker from "@/components/location-tracker"
-import QRScanner from "@/components/qr-scanner"
-import { MapPin, QrCode, Map, Trophy, Home, HelpCircle, Compass, Flag, Users } from "lucide-react"
+import { Map, Trophy, Home, HelpCircle, Compass, Flag, Users, MapPin } from "lucide-react"
 import Link from "next/link"
 import Scoreboard from "@/components/scoreboard"
 import dynamic from "next/dynamic"
@@ -221,14 +220,10 @@ export default function Dashboard() {
             <Card className="glass-panel border-primary/30 overflow-hidden shadow-lg slide-in delay-100">
               <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-3 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-xl">
+                <TabsList className="grid grid-cols-2 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-xl">
                   <TabsTrigger value="map" className="custom-tab flex items-center gap-2 h-12">
                     <Map className="h-5 w-5" />
                     マップ
-                  </TabsTrigger>
-                  <TabsTrigger value="qr" className="custom-tab flex items-center gap-2 h-12">
-                    <QrCode className="h-5 w-5" />
-                    QRスキャン
                   </TabsTrigger>
                   <TabsTrigger value="score" className="custom-tab flex items-center gap-2 h-12">
                     <Trophy className="h-5 w-5" />
@@ -251,10 +246,6 @@ export default function Dashboard() {
                       <LocationTracker onLocationUpdate={handleLocationUpdate} />
                     </div>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="qr" className="p-4 slide-in">
-                  <QRScanner />
                 </TabsContent>
 
                 <TabsContent value="score" className="p-4 slide-in">

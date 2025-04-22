@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { AlertCircle, Edit, Trash, Plus, QrCode, RefreshCw } from "lucide-react"
+import { AlertCircle, Edit, Trash, Plus, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import CheckpointForm from "@/components/staff/checkpoint-form"
-import QRCodeDisplay from "@/components/staff/qr-code-display"
 import { getCheckpoints, type Checkpoint } from "@/lib/supabase"
 
 export default function CheckpointManager() {
@@ -17,7 +16,6 @@ export default function CheckpointManager() {
   const [error, setError] = useState<string | null>(null)
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false)
   const [currentCheckpoint, setCurrentCheckpoint] = useState<Checkpoint | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
@@ -53,11 +51,6 @@ export default function CheckpointManager() {
   const handleDeleteCheckpoint = (checkpoint: Checkpoint) => {
     setCurrentCheckpoint(checkpoint)
     setIsDeleteDialogOpen(true)
-  }
-
-  const handleShowQR = (checkpoint: Checkpoint) => {
-    setCurrentCheckpoint(checkpoint)
-    setIsQRDialogOpen(true)
   }
 
   const confirmDeleteCheckpoint = async () => {
@@ -152,14 +145,6 @@ export default function CheckpointManager() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleShowQR(checkpoint)}
-                            title="QRコードを表示"
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
                             onClick={() => handleEditCheckpoint(checkpoint)}
                             title="編集"
                           >
@@ -215,18 +200,6 @@ export default function CheckpointManager() {
                 削除
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* QRコード表示ダイアログ */}
-        <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>チェックポイントQRコード</DialogTitle>
-            </DialogHeader>
-            {currentCheckpoint && (
-              <QRCodeDisplay checkpoint={currentCheckpoint} onClose={() => setIsQRDialogOpen(false)} />
-            )}
           </DialogContent>
         </Dialog>
       </CardContent>
