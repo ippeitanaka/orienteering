@@ -19,9 +19,18 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-inter)", "var(--font-noto)", "sans-serif"],
-        heading: ["var(--font-baloo)", "var(--font-bubblegum)", "var(--font-noto)", "sans-serif"],
+        // 基本フォント設定を変更
+        sans: ["var(--font-nunito)", "var(--font-noto)", "sans-serif"],
+        // かわいいフォントをデフォルトに
         cute: ["var(--font-bubblegum)", "var(--font-baloo)", "var(--font-noto)", "sans-serif"],
+        // 見出し用フォント
+        heading: ["var(--font-fredoka)", "var(--font-baloo)", "var(--font-noto)", "sans-serif"],
+        // コミカルなフォント
+        comic: ["var(--font-comic)", "var(--font-noto)", "sans-serif"],
+        // 丸っこいフォント
+        round: ["var(--font-fredoka)", "var(--font-noto)", "sans-serif"],
+        // バブルガムフォント
+        bubble: ["var(--font-bubblegum)", "var(--font-noto)", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

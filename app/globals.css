@@ -32,7 +32,7 @@
     --input: 350 20% 88%;
     --ring: 350 90% 65%;
 
-    --radius: 1rem;
+    --radius: 1.25rem;
   }
 
   .dark {
@@ -71,9 +71,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-cute;
     font-feature-settings: "palt" 1;
-    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ff8fab' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ff8fab' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
   }
   h1,
   h2,
@@ -82,18 +82,36 @@
   h5,
   h6 {
     @apply font-heading font-bold tracking-tight;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.02em;
   }
 
   /* かわいいフォントスタイル */
   .text-cute {
-    @apply font-cute;
+    @apply font-bubble;
     letter-spacing: 0.02em;
   }
 
   .title-cute {
-    @apply font-cute text-primary;
-    text-shadow: 1px 1px 0px rgba(255, 143, 171, 0.2);
+    @apply font-bubble text-primary;
+    text-shadow: 2px 2px 0px rgba(255, 143, 171, 0.2);
+  }
+
+  /* ボタンのデフォルトスタイルを変更 */
+  button,
+  .button {
+    @apply rounded-full transition-all duration-200;
+  }
+
+  /* 入力フィールドのデフォルトスタイルを変更 */
+  input,
+  select,
+  textarea {
+    @apply rounded-xl;
+  }
+
+  /* リンクのデフォルトスタイルを変更 */
+  a {
+    @apply transition-colors duration-200;
   }
 }
 
@@ -105,7 +123,7 @@
   }
 
   .cute-button {
-    @apply rounded-2xl bg-primary text-primary-foreground shadow-cute-md transition-all hover:bg-primary/90 hover:shadow-glow-pink hover:-translate-y-0.5 active:translate-y-0 active:scale-95 font-medium;
+    @apply rounded-full bg-primary text-primary-foreground shadow-cute-md transition-all hover:bg-primary/90 hover:shadow-glow-pink hover:-translate-y-0.5 active:translate-y-0 active:scale-95 font-medium;
   }
 
   .cute-input {
@@ -127,7 +145,7 @@
   }
 
   .nav-item {
-    @apply flex items-center gap-2 px-4 py-2 rounded-2xl transition-all hover:bg-primary/10;
+    @apply flex items-center gap-2 px-4 py-2 rounded-full transition-all hover:bg-primary/10;
   }
 
   .nav-item-active {
@@ -149,7 +167,7 @@
 
   /* タブのスタイルを改善 */
   .custom-tab {
-    @apply rounded-2xl py-2 px-4 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-cute;
+    @apply rounded-full py-2 px-4 transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground font-bubble;
   }
 
   /* マーカーのスタイルを改善 */
@@ -251,6 +269,42 @@
     right: -20px;
     width: 12px;
   }
+
+  /* UI要素をよりかわいく */
+  .btn,
+  .button,
+  button[type="submit"],
+  button[type="button"] {
+    @apply rounded-full font-bubble;
+  }
+
+  /* shadcn/uiコンポーネントのオーバーライド */
+  .card {
+    @apply rounded-3xl border-2 overflow-hidden;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    @apply rounded-xl;
+  }
+
+  .badge {
+    @apply rounded-full font-bubble;
+  }
+
+  .alert {
+    @apply rounded-2xl border-2;
+  }
+
+  /* テーブルをかわいく */
+  table {
+    @apply rounded-2xl overflow-hidden;
+  }
+
+  th {
+    @apply font-bubble;
+  }
 }
 
 /* アニメーション付きの背景 - より洗練されたデザインに */
@@ -259,73 +313,4 @@
   background-image: radial-gradient(circle at 10% 10%, rgba(255, 143, 171, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 90% 20%, rgba(150, 247, 210, 0.1) 0%, transparent 50%),
     radial-gradient(circle at 50% 80%, rgba(255, 208, 169, 0.1) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ff8fab' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-  background-size: 100% 100%, 100% 100%, 100% 100%, 200px 200px;
-  animation: bg-shift 20s ease infinite;
-}
-
-.cute-bg-alt {
-  background-color: #f8faff;
-  background-image: radial-gradient(circle at 10% 10%, rgba(200, 182, 255, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 90% 20%, rgba(150, 247, 210, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 50% 80%, rgba(255, 240, 165, 0.1) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23c8b6ff' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
-  background-size: 100% 100%, 100% 100%, 100% 100%, 200px 200px;
-  animation: bg-shift 20s ease infinite;
-}
-
-@keyframes bg-shift {
-  0%,
-  100% {
-    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%;
-  }
-  50% {
-    background-position: 0% 0%, 0% 0%, 0% 0%, 10px 10px;
-  }
-}
-
-/* スライドインアニメーション */
-.slide-in {
-  animation: slide-up 0.6s ease-out forwards;
-}
-
-.slide-in.delay-100 {
-  animation-delay: 0.1s;
-}
-
-.slide-in.delay-200 {
-  animation-delay: 0.2s;
-}
-
-/* ページ遷移アニメーション */
-.page-transition {
-  animation: fade-in 0.5s ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* スクロールバーのスタイル */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.2);
-}
+    url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM
