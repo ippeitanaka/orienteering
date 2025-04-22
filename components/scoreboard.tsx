@@ -37,7 +37,7 @@ export function Scoreboard() {
 
     fetchData()
 
-    // 30秒ごとにデータを更新
+    // 15秒ごとにデータを更新 (以前は30秒)
     const interval = setInterval(async () => {
       try {
         const teamsData = await getTeams()
@@ -53,7 +53,7 @@ export function Scoreboard() {
       } catch (err) {
         console.error("Failed to update scoreboard data:", err)
       }
-    }, 30000)
+    }, 15000)
 
     return () => clearInterval(interval)
   }, [])
@@ -121,7 +121,7 @@ export function Scoreboard() {
         ))}
       </div>
 
-      <div className="text-center text-xs text-muted-foreground mt-4">30秒ごとに自動更新されます</div>
+      <div className="text-center text-xs text-muted-foreground mt-4">15秒ごとに自動更新されます</div>
     </div>
   )
 }

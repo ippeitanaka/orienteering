@@ -11,6 +11,7 @@ import { AlertCircle, LogOut } from "lucide-react"
 import CheckpointManager from "./components/checkpoint-manager"
 import TeamManager from "./components/team-manager"
 import Scoreboard from "@/components/scoreboard"
+import AddPointsForm from "@/components/staff/add-points-form"
 import { getCheckpoints, getTeams } from "@/lib/supabase"
 
 export default function StaffDashboardPage() {
@@ -36,22 +37,22 @@ export default function StaffDashboardPage() {
     setLoading(false)
 
     // チェックポイントとチームのデータを取得
-    async function fetchData() {
-      try {
-        setDataLoading(true)
-        const [checkpointsData, teamsData] = await Promise.all([getCheckpoints(), getTeams()])
-        setCheckpoints(checkpointsData)
-        setTeams(teamsData)
-      } catch (err) {
-        console.error("データ取得エラー:", err)
-        setError("データの取得中にエラーが発生しました")
-      } finally {
-        setDataLoading(false)
-      }
-    }
-
     fetchData()
   }, [router])
+
+  const fetchData = async () => {
+    try {
+      setDataLoading(true)
+      const [checkpointsData, teamsData] = await Promise.all([getCheckpoints(), getTeams()])
+      setCheckpoints(checkpointsData)
+      setTeams(teamsData)
+    } catch (err) {
+      console.error("データ取得エラー:", err)
+      setError("データの取得中にエラーが発生しました")
+    } finally {
+      setDataLoading(false)
+    }
+  }
 
   const handleLogout = async () => {
     try {
@@ -141,15 +142,21 @@ export default function StaffDashboardPage() {
           </TabsContent>
 
           <TabsContent value="scoreboard">
-            <Card>
-              <CardHeader>
-                <CardTitle>スコアボード</CardTitle>
-                <CardDescription>チームのスコアとランキングを確認します</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Scoreboard />
-              </CardContent>
-            </Card>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>スコアボード</CardTitle>
+                  <CardDescription>チームのスコアとランキングを確認します</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Scoreboard />
+                </CardContent>
+              </Card>
+
+              <div>
+                <AddPointsForm teams={teams} onSuccess={fetchData} />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 
