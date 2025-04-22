@@ -45,6 +45,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null)
   const leafletLoadAttemptsRef = useRef<number>(0)
   const mapUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const mapInitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // データの取得
   useEffect(() => {
@@ -172,20 +173,23 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
     loadLeafletResources()
 
-    // タイムアウト処理 - 60秒に延長
+    // タイムアウト処理 - 120秒に延長
     loadingTimerRef.current = setTimeout(() => {
       if (!leafletLoaded) {
         console.warn("Leaflet loading timeout")
-        setDebugInfo((prev) => prev + "\nLeaflet loading timeout after 60 seconds")
+        setDebugInfo((prev) => prev + "\nLeaflet loading timeout after 120 seconds")
         setError("マップライブラリの読み込みがタイムアウトしました。ページを再読み込みしてください。")
         setLoading(false)
         if (onError) onError()
       }
-    }, 60000) // 60秒でタイムアウト（延長）
+    }, 120000) // 120秒でタイムアウト（延長）
 
     return () => {
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current)
+      }
+      if (mapInitTimeoutRef.current) {
+        clearTimeout(mapInitTimeoutRef.current)
       }
     }
   }, [onError])
@@ -197,7 +201,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     // マップの初期化を少し遅らせて、DOMが完全に準備できるようにする
     const initTimer = setTimeout(() => {
       initializeMap()
-    }, 300)
+    }, 500)
 
     return () => clearTimeout(initTimer)
   }, [leafletLoaded, loading, mapInitialized, checkpoints, teamLocations])
@@ -229,8 +233,8 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
     }
 
-    // 20秒ごとにマップを更新
-    mapUpdateIntervalRef.current = setInterval(keepMapAlive, 20000)
+    // 15秒ごとにマップを更新
+    mapUpdateIntervalRef.current = setInterval(keepMapAlive, 15000)
 
     return () => {
       if (mapUpdateIntervalRef.current) {
@@ -256,6 +260,9 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current)
+      }
+      if (mapInitTimeoutRef.current) {
+        clearTimeout(mapInitTimeoutRef.current)
       }
     }
   }, [])
@@ -395,6 +402,11 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       if (autoUpdate) {
         startAutoUpdate()
       }
+
+      // マップ初期化後のタイムアウトをクリア
+      if (mapInitTimeoutRef.current) {
+        clearTimeout(mapInitTimeoutRef.current)
+      }
     } catch (err) {
       console.error("Error initializing map:", err)
       setDebugInfo((prev) => prev + `\nError initializing map: ${err instanceof Error ? err.message : String(err)}`)
@@ -488,7 +500,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
                   <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${team.color};"></div>
                   <h3 style="font-weight: bold; margin: 0;">${team.name}</h3>
                 </div>
-                <p style="margin: 5px 0; font-size: 12px;">最終更新: ${new Date(location.timestamp).toLocaleTimeString()}</p>
+                <p style="margin: 5px 0 0 0; font-size: 12px;">最終更新: ${new Date(location.timestamp).toLocaleTimeString()}</p>
               </div>
             `)
 
@@ -715,28 +727,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   return (
     <div className="space-y-4">
-      {/* アラート部分の修正（マップ画面上部の通知） */}
-      <Alert
-        variant="default"
-        className="rounded-xl border-2 border-primary/20 bg-white/80 backdrop-blur-sm shadow-sm mb-4"
-      >
-        <AlertCircle className="h-5 w-5 text-primary" />
-        <AlertTitle className="font-medium">OpenStreetMapを使用しています</AlertTitle>
-        <AlertDescription className="text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <p>「現在地を表示」ボタンをクリックして、現在位置を表示できます。</p>
-            <div className="flex items-center space-x-2">
-              <Switch id="map-auto-update" checked={autoUpdate} onCheckedChange={toggleAutoUpdate} />
-              {/* 自動更新のラベル部分を修正 */}
-              <Label htmlFor="map-auto-update" className="cursor-pointer text-xs">
-                自動更新 {autoUpdate && updateCountdown ? `(${formatCountdown(updateCountdown)})` : ""}
-              </Label>
-            </div>
-          </div>
-          {lastUpdateTime && <p className="text-xs mt-1">最終更新: {lastUpdateTime}</p>}
-        </AlertDescription>
-      </Alert>
-
       <div className="relative">
         <div className="h-[400px] rounded-xl overflow-hidden border-2 border-primary/20">
           {error ? (
@@ -927,6 +917,29 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
           </div>
         </div>
       </div>
+
+      {/* OpenStreetMap情報を下部に移動 */}
+      <Alert
+        variant="default"
+        className="rounded-xl border-2 border-primary/20 bg-white/80 backdrop-blur-sm shadow-sm mt-6"
+      >
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <AlertTitle className="font-medium">OpenStreetMapを使用しています</AlertTitle>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch id="map-auto-update" checked={autoUpdate} onCheckedChange={toggleAutoUpdate} />
+            {/* 自動更新のラベル部分を修正 */}
+            <Label htmlFor="map-auto-update" className="cursor-pointer text-xs">
+              自動更新 {autoUpdate && updateCountdown ? `(${formatCountdown(updateCountdown)})` : ""}
+            </Label>
+          </div>
+        </div>
+        <AlertDescription className="text-xs mt-1">
+          {lastUpdateTime && <p className="text-xs mt-1">最終更新: {lastUpdateTime}</p>}
+        </AlertDescription>
+      </Alert>
 
       {/* デバッグ情報 - 開発中のみ表示 */}
       {process.env.NODE_ENV === "development" && (

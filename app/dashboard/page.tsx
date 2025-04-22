@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [mapLoadFailed, setMapLoadFailed] = useState(false)
   const [mapLoadAttempts, setMapLoadAttempts] = useState(0)
   const [mapKey, setMapKey] = useState(0) // マップの強制再レンダリング用のキー
+  const [mapLoadTimeout, setMapLoadTimeout] = useState<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     // クライアントサイドでのみ実行されるコードをここに記述
@@ -70,7 +71,14 @@ export default function Dashboard() {
     if (isMounted) {
       fetchData()
     }
-  }, [isMounted])
+
+    return () => {
+      // タイムアウトをクリア
+      if (mapLoadTimeout) {
+        clearTimeout(mapLoadTimeout)
+      }
+    }
+  }, [isMounted, mapLoadTimeout])
 
   const handleTeamSelect = (team: Team) => {
     setSelectedTeam(team)
@@ -81,12 +89,34 @@ export default function Dashboard() {
 
   const handleMapLoadError = () => {
     console.log("Map load failed")
+
+    // 既存のタイムアウトをクリア
+    if (mapLoadTimeout) {
+      clearTimeout(mapLoadTimeout)
+    }
+
+    // マップ読み込み失敗から5分後に自動的にリセットするタイマーを設定
+    const timeout = setTimeout(() => {
+      console.log("Auto resetting map load failure state")
+      setMapLoadFailed(false)
+      setMapLoadAttempts((prev) => prev + 1)
+      setMapKey((prev) => prev + 1)
+    }, 300000) // 5分 = 300000ミリ秒
+
+    setMapLoadTimeout(timeout)
     setMapLoadFailed(true)
   }
 
   const handleRetryMapLoad = () => {
+    // 既存のタイムアウトをクリア
+    if (mapLoadTimeout) {
+      clearTimeout(mapLoadTimeout)
+      setMapLoadTimeout(null)
+    }
+
     setMapLoadFailed(false)
     setMapLoadAttempts((prev) => prev + 1)
+    setMapKey((prev) => prev + 1)
   }
 
   // 位置情報が更新されたときにマップを更新
