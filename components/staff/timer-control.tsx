@@ -120,21 +120,23 @@ export default function TimerControl() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <CountdownTimer isStaff={true} />
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+        <CardHeader className="p-3 sm:p-4">
+          <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             タイマー設定
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="hours">時間</Label>
+        <CardContent className="p-3 sm:p-4">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="hours" className="text-xs sm:text-sm">
+                  時間
+                </Label>
                 <Input
                   id="hours"
                   type="number"
@@ -143,10 +145,13 @@ export default function TimerControl() {
                   value={hours}
                   onChange={(e) => setHours(Number(e.target.value))}
                   disabled={loading || timerSettings?.is_running}
+                  className="h-8 sm:h-9 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="minutes">分</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="minutes" className="text-xs sm:text-sm">
+                  分
+                </Label>
                 <Input
                   id="minutes"
                   type="number"
@@ -155,10 +160,13 @@ export default function TimerControl() {
                   value={minutes}
                   onChange={(e) => setMinutes(Number(e.target.value))}
                   disabled={loading || timerSettings?.is_running}
+                  className="h-8 sm:h-9 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="seconds">秒</Label>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="seconds" className="text-xs sm:text-sm">
+                  秒
+                </Label>
                 <Input
                   id="seconds"
                   type="number"
@@ -167,35 +175,39 @@ export default function TimerControl() {
                   value={seconds}
                   onChange={(e) => setSeconds(Number(e.target.value))}
                   disabled={loading || timerSettings?.is_running}
+                  className="h-8 sm:h-9 text-sm"
                 />
               </div>
             </div>
 
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
               <Button
                 onClick={handleStartTimer}
                 disabled={loading || timerSettings?.is_running}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                size="sm"
               >
-                <Play className="h-4 w-4" />
+                <Play className="h-3 w-3 sm:h-4 sm:w-4" />
                 タイマー開始
               </Button>
               <Button
                 onClick={handleStopTimer}
                 disabled={loading || !timerSettings?.is_running}
                 variant="destructive"
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                size="sm"
               >
-                <Square className="h-4 w-4" />
+                <Square className="h-3 w-3 sm:h-4 sm:w-4" />
                 タイマー停止
               </Button>
               <Button
                 onClick={fetchTimerSettings}
                 variant="outline"
                 disabled={loading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm h-8 sm:h-9"
+                size="sm"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4" />
                 更新
               </Button>
             </div>
@@ -203,13 +215,13 @@ export default function TimerControl() {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="text-xs sm:text-sm">{error}</AlertDescription>
               </Alert>
             )}
 
             {success && (
               <Alert variant="default">
-                <AlertDescription>{success}</AlertDescription>
+                <AlertDescription className="text-xs sm:text-sm">{success}</AlertDescription>
               </Alert>
             )}
           </div>

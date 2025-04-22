@@ -55,13 +55,38 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "palt" 1; /* プロポーショナル字間調整 */
+    -webkit-text-size-adjust: 100%; /* iOS用フォントサイズ自動調整を無効化 */
+  }
+
+  /* フォントサイズと行高さの調整 */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-bold;
+    line-height: 1.3;
+  }
+
+  /* スマホ向けの基本フォントサイズを調整 */
+  html {
+    font-size: 15px; /* スマホでの基本サイズをやや小さく */
+  }
+
+  /* タブレット以上でフォントサイズを通常に戻す */
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px;
+    }
   }
 }
 
 /* ELTスタイルのコンポーネント */
 @layer components {
   .elt-container {
-    @apply container mx-auto px-4 py-8;
+    @apply container mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8;
   }
 
   .elt-card {
@@ -81,11 +106,11 @@
   }
 
   .elt-header {
-    @apply bg-background border-b border-border/50 shadow-sm;
+    @apply bg-background border-b border-border/50 shadow-sm py-2 px-3 sm:py-3 sm:px-4;
   }
 
   .elt-footer {
-    @apply bg-background border-t border-border/50 text-muted-foreground text-sm py-6;
+    @apply bg-background border-t border-border/50 text-muted-foreground text-sm py-4 sm:py-6;
   }
 
   .elt-logo {
@@ -93,7 +118,7 @@
   }
 
   .elt-nav-item {
-    @apply px-3 py-2 rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground;
+    @apply px-2 py-1.5 sm:px-3 sm:py-2 rounded-sm transition-colors hover:bg-accent hover:text-accent-foreground;
   }
 
   .elt-nav-item-active {
@@ -101,28 +126,38 @@
   }
 
   .elt-section {
-    @apply py-8;
+    @apply py-4 sm:py-6 md:py-8;
   }
 
   .elt-grid {
-    @apply grid gap-6;
+    @apply grid gap-3 sm:gap-4 md:gap-6;
   }
 
   .elt-divider {
-    @apply border-t border-border my-6;
+    @apply border-t border-border my-4 sm:my-6;
   }
 
   .elt-bg {
-    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+
+  /* レスポンシブなカードタイトル */
+  .responsive-card-title {
+    @apply text-base sm:text-lg md:text-xl font-bold;
+  }
+
+  /* レスポンシブなタブスタイル */
+  .responsive-tabs {
+    @apply text-sm sm:text-base;
   }
 }
 
 /* モダンなスクロールバー */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -149,4 +184,16 @@
 
 .fade-in {
   animation: fadeIn 0.5s ease-in-out;
+}
+
+/* スマートフォン向け特殊クラス */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* フォント設定 */
+.font-ud-gothic {
+  font-family: var(--font-biz-ud-gothic), sans-serif;
 }

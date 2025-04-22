@@ -12,15 +12,23 @@ const config = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "1rem",
+        sm: "1.5rem",
+        lg: "2rem",
+      },
       screens: {
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
         "2xl": "1400px",
       },
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-noto)", "sans-serif"],
-        heading: ["var(--font-oswald)", "var(--font-noto)", "sans-serif"],
+        sans: ["var(--font-biz-ud-gothic)", "sans-serif"],
+        heading: ["var(--font-biz-ud-gothic)", "var(--font-oswald)", "sans-serif"],
         mono: ["var(--font-roboto-mono)", "monospace"],
       },
       colors: {
@@ -82,7 +90,7 @@ const config = {
         },
         "slide-up": {
           "0%": {
-            transform: "translateY(20px)",
+            transform: "translateY(10px)",
             opacity: "0",
           },
           "100%": {
@@ -92,7 +100,7 @@ const config = {
         },
         "slide-in-right": {
           "0%": {
-            transform: "translateX(20px)",
+            transform: "translateX(10px)",
             opacity: "0",
           },
           "100%": {
@@ -105,8 +113,8 @@ const config = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-slow": "pulse-slow 3s ease-in-out infinite",
-        "slide-up": "slide-up 0.6s ease-out",
-        "slide-in-right": "slide-in-right 0.6s ease-out",
+        "slide-up": "slide-up 0.5s ease-out",
+        "slide-in-right": "slide-in-right 0.5s ease-out",
       },
       boxShadow: {
         "elt-glow": "0 0 15px rgba(255, 255, 255, 0.3)",

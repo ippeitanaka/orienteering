@@ -125,8 +125,8 @@ export default function StaffDashboardPage() {
     return (
       <div className="elt-bg min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-10 w-10 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">読み込み中...</p>
+          <div className="animate-spin h-8 w-8 sm:h-10 sm:w-10 border-3 sm:border-4 border-primary border-t-transparent rounded-full mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-muted-foreground">読み込み中...</p>
         </div>
       </div>
     )
@@ -135,30 +135,49 @@ export default function StaffDashboardPage() {
   return (
     <div className="elt-bg min-h-screen">
       <div className="elt-container">
-        <header className="mb-8 bg-card p-4 rounded-md shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Image src="/images/elt-logo.png" alt="ELT 26周年記念ロゴ" width={80} height={48} className="elt-logo" />
+        <header className="mb-4 sm:mb-6 md:mb-8 bg-card p-3 sm:p-4 rounded-md shadow-sm">
+          <div className="flex items-center justify-between flex-wrap sm:flex-nowrap gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Image
+                src="/images/elt-logo.png"
+                alt="ELT 26周年記念ロゴ"
+                width={60}
+                height={36}
+                className="elt-logo h-auto w-auto max-h-10 sm:max-h-12"
+              />
               <div>
-                <h1 className="text-2xl font-bold">スタッフダッシュボード</h1>
-                <p className="text-muted-foreground">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold">スタッフダッシュボード</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   ようこそ、<span className="font-medium text-primary">{staffName}</span> さん
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              ログアウト
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>ログアウト</span>
             </Button>
           </div>
         </header>
 
         <Tabs defaultValue="checkpoints" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-8">
-            <TabsTrigger value="checkpoints">チェックポイント管理</TabsTrigger>
-            <TabsTrigger value="teams">チーム管理</TabsTrigger>
-            <TabsTrigger value="scoreboard">スコアボード</TabsTrigger>
-            <TabsTrigger value="timer">タイマー</TabsTrigger>
+          <TabsList className="grid grid-cols-4 mb-4 sm:mb-6 md:mb-8 text-xs sm:text-sm">
+            <TabsTrigger value="checkpoints" className="px-1 sm:px-2">
+              チェックポイント
+            </TabsTrigger>
+            <TabsTrigger value="teams" className="px-1 sm:px-2">
+              チーム管理
+            </TabsTrigger>
+            <TabsTrigger value="scoreboard" className="px-1 sm:px-2">
+              スコアボード
+            </TabsTrigger>
+            <TabsTrigger value="timer" className="px-1 sm:px-2">
+              タイマー
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="checkpoints">
@@ -170,13 +189,15 @@ export default function StaffDashboardPage() {
           </TabsContent>
 
           <TabsContent value="scoreboard">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
               <Card className="elt-card">
-                <CardHeader>
-                  <CardTitle>スコアボード</CardTitle>
-                  <CardDescription>チームのスコアとランキングを確認します</CardDescription>
+                <CardHeader className="p-3 sm:p-4">
+                  <CardTitle className="text-base sm:text-lg">スコアボード</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    チームのスコアとランキングを確認します
+                  </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-4">
                   <Scoreboard />
                 </CardContent>
               </Card>
@@ -192,7 +213,7 @@ export default function StaffDashboardPage() {
           </TabsContent>
         </Tabs>
 
-        <div className="mt-8 text-center text-sm text-muted-foreground">
+        <div className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
         </div>
       </div>

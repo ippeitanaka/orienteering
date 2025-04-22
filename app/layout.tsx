@@ -1,15 +1,15 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Noto_Sans_JP } from "next/font/google"
+import { BIZ_UDGothic } from "next/font/google"
 import { Roboto_Mono } from "next/font/google"
 import { Oswald } from "next/font/google"
 import "./globals.css"
 
-// 日本語フォント
-const noto = Noto_Sans_JP({
+// 日本語フォントをUD BIZゴシックに変更
+const bizUdGothic = BIZ_UDGothic({
+  weight: ["400", "700"],
   subsets: ["latin"],
-  variable: "--font-noto",
-  weight: ["400", "500", "700"],
+  variable: "--font-biz-ud-gothic",
 })
 
 // 英語見出しフォント
@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="dark">
-      <body className={`${noto.variable} ${oswald.variable} ${robotoMono.variable} elt-bg`}>{children}</body>
+      <body className={`${bizUdGothic.variable} ${oswald.variable} ${robotoMono.variable} elt-bg`}>{children}</body>
     </html>
   )
 }

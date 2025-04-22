@@ -132,15 +132,15 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
   if (loading) {
     return (
       <Card className="cute-card">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-1.5 sm:gap-2">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             カウントダウンタイマー
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex justify-center items-center h-16">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex justify-center items-center h-12 sm:h-16">
+            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-primary border-t-transparent"></div>
           </div>
         </CardContent>
       </Card>
@@ -151,42 +151,48 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{error}</AlertDescription>
+        <AlertDescription className="text-xs sm:text-sm">{error}</AlertDescription>
       </Alert>
     )
   }
 
   return (
     <Card className="cute-card">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
+          <CardTitle className="text-base sm:text-lg flex items-center gap-1.5 sm:gap-2">
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             カウントダウンタイマー
           </CardTitle>
           {timerSettings?.is_running ? (
-            <Badge variant="default" className="animate-pulse">
+            <Badge variant="default" className="animate-pulse text-xs">
               実行中
             </Badge>
           ) : (
-            <Badge variant="outline">停止中</Badge>
+            <Badge variant="outline" className="text-xs">
+              停止中
+            </Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-4">
         <div className="flex flex-col items-center">
-          <div className="text-4xl font-mono font-bold tabular-nums tracking-wider text-center py-4">
+          <div className="text-2xl sm:text-3xl md:text-4xl font-mono font-bold tabular-nums tracking-wider text-center py-2 sm:py-4">
             {formatTime(timeLeft)}
           </div>
           {!isStaff && timerSettings?.is_running && (
-            <p className="text-sm text-muted-foreground">残り時間です。時間内に全チェックポイントを回りましょう！</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              残り時間です。時間内に全チェックポイントを回りましょう！
+            </p>
           )}
           {!isStaff && !timerSettings?.is_running && (
-            <p className="text-sm text-muted-foreground">タイマーは現在停止中です。スタッフの指示をお待ちください。</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              タイマーは現在停止中です。スタッフの指示をお待ちください。
+            </p>
           )}
           {error && (
             <Alert variant="warning" className="mt-2">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
               <AlertDescription className="text-xs">{error}</AlertDescription>
             </Alert>
           )}
