@@ -34,11 +34,15 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   const autoUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null)
+  // 選択されたチェックポイントのIDを保持する状態
+  const [selectedCheckpointId, setSelectedCheckpointId] = useState<number | null>(null)
+  // 強調表示アニメーションのタイマー
+  const highlightTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // マップとマーカーの参照を保持
   const mapRef = useRef<any>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
-  const checkpointMarkersRef = useRef<any[]>([])
+  const checkpointMarkersRef = useRef<{ [key: number]: any }>({}) // IDをキーとしたオブジェクトに変更
   const teamMarkersRef = useRef<{ [key: number]: any }>({})
   const teamLabelsRef = useRef<{ [key: number]: any }>({})
   const currentPositionMarkerRef = useRef<any>(null)
@@ -122,6 +126,40 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     }
   }, [autoUpdate, mapInitialized, updateInterval])
 
+  // 選択されたチェックポイントが変更されたときの処理
+  useEffect(() => {
+    if (selectedCheckpointId !== null && mapInitialized && checkpointMarkersRef.current[selectedCheckpointId]) {
+      // 前回のタイマーをクリア
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current)
+      }
+
+      // 選択されたチェックポイントを強調表示
+      highlightCheckpoint(selectedCheckpointId)
+
+      // 選択されたチェックポイントの位置にマップを移動
+      const checkpoint = checkpoints.find((cp) => cp.id === selectedCheckpointId)
+      if (checkpoint && mapRef.current) {
+        mapRef.current.flyTo([checkpoint.latitude, checkpoint.longitude], 17, {
+          animate: true,
+          duration: 1,
+        })
+      }
+
+      // 10秒後に強調表示を解除
+      highlightTimerRef.current = setTimeout(() => {
+        setSelectedCheckpointId(null)
+        resetCheckpointMarkers()
+      }, 10000)
+    }
+
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current)
+      }
+    }
+  }, [selectedCheckpointId, mapInitialized, checkpoints])
+
   // Leafletスクリプトとスタイルを読み込む
   useEffect(() => {
     const loadLeafletResources = async () => {
@@ -190,6 +228,9 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
       if (mapInitTimeoutRef.current) {
         clearTimeout(mapInitTimeoutRef.current)
+      }
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current)
       }
     }
   }, [onError])
@@ -263,6 +304,9 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
       if (mapInitTimeoutRef.current) {
         clearTimeout(mapInitTimeoutRef.current)
+      }
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current)
       }
     }
   }, [])
@@ -420,8 +464,8 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
     try {
       // 既存のマーカーをクリア
-      checkpointMarkersRef.current.forEach((marker) => marker.remove())
-      checkpointMarkersRef.current = []
+      Object.values(checkpointMarkersRef.current).forEach((marker) => marker.remove())
+      checkpointMarkersRef.current = {}
 
       // チェックポイントのマーカーを追加
       checkpointsData.forEach((checkpoint) => {
@@ -444,13 +488,109 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
             </div>
           `)
 
-          checkpointMarkersRef.current.push(marker)
+          checkpointMarkersRef.current[checkpoint.id] = marker
         } catch (e) {
           console.error("Error adding checkpoint marker:", e)
         }
       })
     } catch (e) {
       console.error("Error in updateCheckpointMarkers:", e)
+    }
+  }
+
+  // チェックポイントを強調表示する関数
+  const highlightCheckpoint = (checkpointId: number) => {
+    if (!window.L || !mapRef.current || !checkpointMarkersRef.current[checkpointId]) return
+
+    try {
+      const checkpoint = checkpoints.find((cp) => cp.id === checkpointId)
+      if (!checkpoint) return
+
+      // 既存のマーカーを削除
+      checkpointMarkersRef.current[checkpointId].remove()
+
+      // 大きくて点滅するアイコンを作成
+      const pulsingIcon = window.L.divIcon({
+        className: "checkpoint-marker-highlighted",
+        html: `
+          <div class="pulse-ring"></div>
+          <div style="
+            background-color: #FF5252; 
+            width: 20px; 
+            height: 20px; 
+            border-radius: 50%; 
+            border: 3px solid white; 
+            box-shadow: 0 0 8px rgba(255,82,82,0.8);
+            animation: pulse 1.5s infinite;
+            z-index: 1000;
+          "></div>
+        `,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      })
+
+      // スタイルを追加
+      if (!document.getElementById("pulse-animation-style")) {
+        const style = document.createElement("style")
+        style.id = "pulse-animation-style"
+        style.innerHTML = `
+          @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .pulse-ring {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: rgba(255, 82, 82, 0.3);
+            border: 2px solid rgba(255, 82, 82, 0.5);
+            animation: pulse-ring 2s infinite;
+            top: 0;
+            left: 0;
+          }
+          @keyframes pulse-ring {
+            0% { transform: scale(0.5); opacity: 0.8; }
+            80%, 100% { transform: scale(1.7); opacity: 0; }
+          }
+        `
+        document.head.appendChild(style)
+      }
+
+      // 新しいマーカーを作成
+      const newMarker = window.L.marker([checkpoint.latitude, checkpoint.longitude], {
+        icon: pulsingIcon,
+        zIndexOffset: 1000, // 他のマーカーより前面に表示
+      })
+        .addTo(mapRef.current)
+        .bindPopup(`
+          <div style="min-width: 150px;">
+            <h3 style="font-weight: bold; margin-bottom: 5px;">${checkpoint.name}</h3>
+            <p style="margin: 5px 0;">${checkpoint.description || ""}</p>
+            <p style="margin: 5px 0; font-weight: bold;">ポイント: ${checkpoint.point_value}</p>
+          </div>
+        `)
+
+      // ポップアップを自動的に開く
+      newMarker.openPopup()
+
+      // 新しいマーカーを保存
+      checkpointMarkersRef.current[checkpointId] = newMarker
+    } catch (e) {
+      console.error("Error highlighting checkpoint:", e)
+    }
+  }
+
+  // チェックポイントマーカーをリセットする関数
+  const resetCheckpointMarkers = () => {
+    if (!window.L || !mapRef.current) return
+
+    try {
+      // 全てのチェックポイントマーカーを通常表示に戻す
+      updateCheckpointMarkers(checkpoints)
+    } catch (e) {
+      console.error("Error resetting checkpoint markers:", e)
     }
   }
 
@@ -563,6 +703,9 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
         // 現在位置のマーカーを更新
         if (window.L && mapRef.current) {
+          updateCurrentPositionMarker(latitude, longitude)
+
+          // マップを現在位置に移動（アニメーションを短く設定）  {
           updateCurrentPositionMarker(latitude, longitude)
 
           // マップを現在位置に移動（アニメーションを短く設定）
@@ -706,6 +849,11 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     setAutoUpdate(!autoUpdate)
   }
 
+  // チェックポイントをクリックした時の処理
+  const handleCheckpointClick = (checkpointId: number) => {
+    setSelectedCheckpointId(checkpointId)
+  }
+
   // ローディング表示
   if (loading) {
     return (
@@ -818,7 +966,10 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
               {checkpoints.map((checkpoint) => (
                 <li
                   key={checkpoint.id}
-                  className="p-3 bg-muted/50 backdrop-blur-sm rounded-lg hover:bg-muted/70 transition-colors"
+                  className={`p-3 bg-muted/50 backdrop-blur-sm rounded-lg hover:bg-muted/70 transition-colors cursor-pointer ${
+                    selectedCheckpointId === checkpoint.id ? "bg-primary/10 border border-primary" : ""
+                  }`}
+                  onClick={() => handleCheckpointClick(checkpoint.id)}
                 >
                   <p className="font-medium">{checkpoint.name}</p>
                   <p className="text-xs text-muted-foreground">
