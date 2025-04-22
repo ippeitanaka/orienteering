@@ -37,7 +37,7 @@ export function Scoreboard() {
 
     fetchData()
 
-    // 15秒ごとにデータを更新 (以前は30秒)
+    // 15秒ごとにデータを更新
     const interval = setInterval(async () => {
       try {
         const teamsData = await getTeams()
@@ -72,8 +72,8 @@ export function Scoreboard() {
   return (
     <div className="space-y-6 slide-in">
       <div className="text-center mb-8">
-        <Trophy className="h-10 w-10 text-accent mx-auto mb-3 animate-pulse-soft" />
-        <h2 className="text-2xl font-bold font-heading text-primary">ランキング</h2>
+        <Trophy className="h-10 w-10 text-primary mx-auto mb-3 animate-pulse-slow" />
+        <h2 className="text-2xl font-bold font-heading">ランキング</h2>
         <p className="text-muted-foreground">チームの進捗状況とスコア</p>
       </div>
 
@@ -81,34 +81,29 @@ export function Scoreboard() {
         {teams.map((team, index) => (
           <div
             key={team.id}
-            className="flex items-center justify-between p-4 rounded-xl transition-all duration-300 hover:scale-[1.01] shadow-sm hover:shadow slide-in"
+            className="flex items-center justify-between p-4 rounded-md transition-all duration-300 hover:bg-accent/30 slide-in"
             style={{
-              backgroundColor: `${team.color}10`,
-              borderLeft: `4px solid ${team.color}`,
               animationDelay: `${index * 0.1}s`,
             }}
           >
             <div className="flex items-center gap-4">
-              <div
-                className="w-8 h-8 rounded-full bg-white flex items-center justify-center font-bold text-lg"
-                style={{ color: team.color }}
-              >
+              <div className="w-8 h-8 rounded-md bg-background flex items-center justify-center font-bold text-lg">
                 {index + 1}
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: team.color }}></div>
+                <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: team.color }}></div>
                 <div className="font-medium text-lg">{team.name}</div>
               </div>
             </div>
             <div className="flex items-center gap-6">
               <div className="text-sm flex gap-2 items-center">
-                <CheckCircle className="h-4 w-4 text-secondary" />
+                <CheckCircle className="h-4 w-4 text-primary" />
                 <span>
                   {teamProgress[team.id] || 0}/{totalCheckpoints}
                 </span>
               </div>
               <div
-                className="font-bold px-4 py-2 rounded-xl text-sm min-w-[4rem] text-center shadow-sm"
+                className="font-bold px-4 py-2 rounded-sm text-sm min-w-[4rem] text-center"
                 style={{
                   backgroundColor: team.color,
                   color: getContrastColor(team.color),

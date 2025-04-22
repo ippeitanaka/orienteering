@@ -17,6 +17,7 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   // タイマー設定を取得
   useEffect(() => {
@@ -25,34 +26,68 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
         const settings = await getTimerSettings()
         setTimerSettings(settings)
         setLoading(false)
+        setError(null)
       } catch (err) {
         console.error("Error fetching timer settings:", err)
-        setError("タイマー設定の取得に失敗しました")
-        setLoading(false)
+
+        // 最大3回までリトライ
+        if (retryCount < 3) {
+          console.log(`Retrying timer settings fetch (${retryCount + 1}/3)...`)
+          setRetryCount((prev) => prev + 1)
+          setTimeout(fetchTimerSettings, 2000) // 2秒後にリトライ
+        } else {
+          setError("タイマー設定の取得に失敗しました")
+          setLoading(false)
+
+          // エラー時のフォールバック設定
+          setTimerSettings({
+            duration: 3600,
+            end_time: null,
+            is_running: false,
+          })
+        }
       }
     }
 
     fetchTimerSettings()
 
     // リアルタイム更新のサブスクリプションを設定
-    const subscription = supabase
-      .channel("timer_settings_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "timer_settings" }, (payload) => {
-        console.log("Timer settings changed:", payload)
-        // 変更があった場合は設定を更新
-        fetchTimerSettings()
-      })
-      .subscribe()
+    let subscription: any = null
+
+    try {
+      subscription = supabase
+        .channel("timer_settings_changes")
+        .on("postgres_changes", { event: "*", schema: "public", table: "timer_settings" }, (payload) => {
+          console.log("Timer settings changed:", payload)
+          // 変更があった場合は設定を更新
+          fetchTimerSettings()
+        })
+        .subscribe((status) => {
+          console.log("Subscription status:", status)
+        })
+    } catch (err) {
+      console.error("Error setting up subscription:", err)
+    }
 
     return () => {
-      subscription.unsubscribe()
+      if (subscription) {
+        try {
+          subscription.unsubscribe()
+        } catch (err) {
+          console.error("Error unsubscribing:", err)
+        }
+      }
     }
-  }, [])
+  }, [retryCount])
 
   // タイマーのカウントダウン処理
   useEffect(() => {
-    if (!timerSettings || !timerSettings.is_running || !timerSettings.end_time) {
-      setTimeLeft(timerSettings?.duration || null)
+    if (!timerSettings) {
+      return
+    }
+
+    if (!timerSettings.is_running || !timerSettings.end_time) {
+      setTimeLeft(timerSettings.duration || null)
       return
     }
 
@@ -112,7 +147,7 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
     )
   }
 
-  if (error) {
+  if (error && !timerSettings) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
@@ -148,6 +183,12 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
           )}
           {!isStaff && !timerSettings?.is_running && (
             <p className="text-sm text-muted-foreground">タイマーは現在停止中です。スタッフの指示をお待ちください。</p>
+          )}
+          {error && (
+            <Alert variant="warning" className="mt-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{error}</AlertDescription>
+            </Alert>
           )}
         </div>
       </CardContent>

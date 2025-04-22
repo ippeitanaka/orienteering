@@ -18,26 +18,49 @@ export default function TimerControl() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     fetchTimerSettings()
-  }, [])
+  }, [retryCount])
 
   const fetchTimerSettings = async () => {
     try {
+      setLoading(true)
       const settings = await getTimerSettings()
       setTimerSettings(settings)
+      setError(null)
 
       if (settings) {
         // 現在の設定から時間、分、秒を設定
-        const totalSeconds = settings.duration
+        const totalSeconds = settings.duration || 0
         setHours(Math.floor(totalSeconds / 3600))
         setMinutes(Math.floor((totalSeconds % 3600) / 60))
         setSeconds(totalSeconds % 60)
+      } else {
+        // デフォルト値を設定
+        setHours(1)
+        setMinutes(0)
+        setSeconds(0)
       }
     } catch (err) {
       console.error("Error fetching timer settings:", err)
-      setError("タイマー設定の取得に失敗しました")
+
+      // 最大3回までリトライ
+      if (retryCount < 3) {
+        console.log(`Retrying timer settings fetch (${retryCount + 1}/3)...`)
+        setRetryCount((prev) => prev + 1)
+        setTimeout(fetchTimerSettings, 2000) // 2秒後にリトライ
+      } else {
+        setError("タイマー設定の取得に失敗しました")
+
+        // デフォルト値を設定
+        setHours(1)
+        setMinutes(0)
+        setSeconds(0)
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -56,6 +79,7 @@ export default function TimerControl() {
         return
       }
 
+      console.log(`Starting timer with ${totalSeconds} seconds`)
       const result = await startTimer(totalSeconds)
 
       if (result) {
@@ -78,6 +102,7 @@ export default function TimerControl() {
     setSuccess(null)
 
     try {
+      console.log("Stopping timer")
       const result = await stopTimer()
 
       if (result) {

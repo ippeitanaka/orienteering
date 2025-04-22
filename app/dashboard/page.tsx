@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { getTeams, type Team } from "@/lib/supabase"
 import TeamSelector from "@/components/team-selector"
 import LocationTracker from "@/components/location-tracker"
-import { Map, Trophy, Home, HelpCircle, Compass, Flag, Users, MapPin } from "lucide-react"
+import { Map, Trophy, Home, HelpCircle, Users, MapPin } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import Scoreboard from "@/components/scoreboard"
 import dynamic from "next/dynamic"
 import SimpleFallbackMap from "@/components/simple-fallback-map"
@@ -97,7 +98,7 @@ export default function Dashboard() {
   // サーバーサイドレンダリング時は最小限の内容を表示
   if (!isMounted) {
     return (
-      <div className="min-h-screen cute-bg flex items-center justify-center">
+      <div className="elt-bg min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block">
             <MapPin className="h-12 w-12 text-primary" />
@@ -110,9 +111,9 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen cute-bg flex items-center justify-center">
+      <div className="elt-bg min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-bounce-slow">
+          <div className="inline-block animate-pulse-slow">
             <MapPin className="h-12 w-12 text-primary" />
           </div>
           <p className="mt-4 text-lg font-heading">読み込み中...</p>
@@ -123,14 +124,14 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen cute-bg flex items-center justify-center">
-        <Card className="cute-card max-w-md border-destructive/30">
+      <div className="elt-bg min-h-screen flex items-center justify-center">
+        <Card className="elt-card max-w-md border-destructive/30">
           <CardHeader>
             <CardTitle className="text-center text-destructive font-heading">エラーが発生しました</CardTitle>
             <CardDescription className="text-center">{error}</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button onClick={() => window.location.reload()} className="cute-button">
+            <Button onClick={() => window.location.reload()} className="elt-button">
               再読み込み
             </Button>
           </CardContent>
@@ -141,16 +142,19 @@ export default function Dashboard() {
 
   // ダッシュボードのヘッダー部分
   return (
-    <div className="min-h-screen cute-bg">
-      <header className="bg-primary/90 text-primary-foreground py-6 shadow-md relative overflow-hidden">
+    <div className="elt-bg min-h-screen">
+      <header className="elt-header py-4 shadow-sm relative overflow-hidden">
         <div className="container mx-auto px-4 flex justify-between items-center relative z-10">
-          <h1 className="text-2xl font-bold font-heading">オリエンテーリング</h1>
+          <div className="flex items-center gap-3">
+            <Image src="/images/elt-logo.png" alt="ELT 26周年記念ロゴ" width={80} height={48} className="elt-logo" />
+            <h1 className="text-xl font-bold font-heading">学外オリエンテーション</h1>
+          </div>
           <div className="flex items-center gap-3">
             <Link href="/help/maps-api">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 rounded-full"
+                className="text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
               >
                 <HelpCircle className="h-5 w-5" />
                 <span className="sr-only md:not-sr-only md:ml-2">ヘルプ</span>
@@ -160,7 +164,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground hover:bg-primary-foreground/10 rounded-full"
+                className="text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
               >
                 <Home className="h-5 w-5" />
                 <span className="sr-only md:not-sr-only md:ml-2">ホーム</span>
@@ -168,22 +172,13 @@ export default function Dashboard() {
             </Link>
           </div>
         </div>
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10">
-          <div className="absolute top-1/4 left-10 animate-float">
-            <Compass className="w-12 h-12" />
-          </div>
-          <div className="absolute bottom-1/4 right-10 animate-pulse-soft">
-            <Flag className="w-10 h-10" />
-          </div>
-        </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 page-transition">
+      <main className="elt-container page-transition">
         {!selectedTeam ? (
-          <Card className="glass-panel max-w-md mx-auto border-primary/30 shadow-lg slide-in">
-            <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
+          <Card className="elt-card max-w-md mx-auto shadow-elt-sharp slide-in">
             <CardHeader>
-              <CardTitle className="text-center text-primary font-heading text-2xl">チームログイン</CardTitle>
+              <CardTitle className="text-center font-heading text-2xl">チームログイン</CardTitle>
               <CardDescription className="text-center text-lg mt-2">
                 スタッフから提供されたチームコードを入力してください
               </CardDescription>
@@ -194,10 +189,10 @@ export default function Dashboard() {
           </Card>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm slide-in">
+            <div className="flex items-center justify-between bg-card p-4 rounded-md shadow-elt-sharp slide-in">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-6 h-6 rounded-full shadow-sm border border-white/50"
+                  className="w-6 h-6 rounded-sm shadow-sm border border-border/50"
                   style={{ backgroundColor: selectedTeam.color }}
                 ></div>
                 <h2 className="text-xl font-heading">{selectedTeam.name}</h2>
@@ -205,7 +200,7 @@ export default function Dashboard() {
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-full border-primary/30 hover:bg-primary/10 flex items-center gap-2"
+                className="rounded-sm border-border/50 hover:bg-accent flex items-center gap-2"
                 onClick={() => {
                   setSelectedTeam(null)
                   if (typeof window !== "undefined") {
@@ -223,15 +218,14 @@ export default function Dashboard() {
               <CountdownTimer />
             </div>
 
-            <Card className="glass-panel border-primary/30 overflow-hidden shadow-lg slide-in delay-100">
-              <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
+            <Card className="elt-card shadow-elt-sharp slide-in delay-100">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-xl">
-                  <TabsTrigger value="map" className="custom-tab flex items-center gap-2 h-12">
+                <TabsList className="grid grid-cols-2 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-sm">
+                  <TabsTrigger value="map" className="elt-nav-item flex items-center gap-2 h-12">
                     <Map className="h-5 w-5" />
                     マップ
                   </TabsTrigger>
-                  <TabsTrigger value="score" className="custom-tab flex items-center gap-2 h-12">
+                  <TabsTrigger value="score" className="elt-nav-item flex items-center gap-2 h-12">
                     <Trophy className="h-5 w-5" />
                     スコア
                   </TabsTrigger>
@@ -263,9 +257,9 @@ export default function Dashboard() {
         )}
       </main>
 
-      <footer className="bg-muted py-6 mt-8">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
+      <footer className="elt-footer text-center mt-8">
+        <div className="container mx-auto px-4">
+          <p>© {new Date().getFullYear()} 東洋医療専門学校　救急救命士学科</p>
         </div>
       </footer>
     </div>
