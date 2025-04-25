@@ -14,6 +14,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Team ID, latitude and longitude are required" }, { status: 400 })
     }
 
+    // 古い位置情報を削除
+    const { error: deleteError } = await supabaseServer.from("team_locations").delete().eq("team_id", teamId)
+
+    if (deleteError) {
+      console.error("Error deleting old team location:", deleteError)
+      return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    }
+
+    // 新しい位置情報を追加
     const { error } = await supabaseServer.from("team_locations").insert([{ team_id: teamId, latitude, longitude }])
 
     if (error) {
