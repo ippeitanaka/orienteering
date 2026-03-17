@@ -1,8 +1,24 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient, SupabaseClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-export const supabase = createClient(supabaseUrl, supabaseKey)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// 環境変数が設定されていない場合はダミークライアントを作成（ビルド時のエラー回避用）
+const createSupabaseClient = (): SupabaseClient => {
+  if (!supabaseUrl || !supabaseKey) {
+    // ビルド時に環境変数がない場合、ダミーURLでクライアントを作成
+    // 実行時にはエラーがスローされるが、ビルドは通る
+    return createClient("https://placeholder.supabase.co", "placeholder-key")
+  }
+  return createClient(supabaseUrl, supabaseKey)
+}
+
+export const supabase = createSupabaseClient()
+
+// Supabase接続が有効かどうかを確認するヘルパー関数
+export const isSupabaseConfigured = (): boolean => {
+  return !!(supabaseUrl && supabaseKey)
+}
 
 export interface Checkpoint {
   id: number
