@@ -140,7 +140,7 @@ export default function StaffDashboardPage() {
             <div className="flex items-center gap-2 sm:gap-4">
               <Image
                 src="/images/elt-logo.png"
-                alt="ELT 26周年記念ロゴ"
+                alt="ELT 27周年記念ロゴ"
                 width={60}
                 height={36}
                 className="elt-logo h-auto w-auto max-h-10 sm:max-h-12"

@@ -11,7 +11,7 @@ export default function Home() {
           <div className="flex justify-center mb-4 sm:mb-6">
             <Image
               src="/images/elt-logo.png"
-              alt="ELT 26周年記念ロゴ"
+              alt="ELT 27周年記念ロゴ"
               width={160}
               height={96}
               className="elt-logo h-auto w-auto max-h-20 sm:max-h-24"

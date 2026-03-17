@@ -79,7 +79,7 @@ export default function TeamLoginPage() {
               <div className="flex justify-center mb-4">
                 <Image
                   src="/images/elt-logo.png"
-                  alt="ELT 26周年記念ロゴ"
+                  alt="ELT 27周年記念ロゴ"
                   width={120}
                   height={72}
                   className="elt-logo"
