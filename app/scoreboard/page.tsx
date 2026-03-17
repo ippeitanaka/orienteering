@@ -24,7 +24,7 @@ export default function ScoreboardPage() {
       <div className="elt-container">
         <header className="text-center mb-8 flex flex-col items-center">
           <div className="mb-4">
-            <Image src="/images/elt-logo.png" alt="ELT 26周年記念ロゴ" width={150} height={90} className="elt-logo" />
+            <Image src="/images/elt-logo.png" alt="ELT 27周年記念ロゴ" width={150} height={90} className="elt-logo" />
           </div>
           <h1 className="text-3xl font-bold mb-2">スコアボード</h1>
           <p className="text-muted-foreground">各チームの現在のスコアとランキング</p>

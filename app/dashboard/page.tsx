@@ -176,7 +176,7 @@ export default function Dashboard() {
       <header className="elt-header py-4 shadow-sm relative overflow-hidden">
         <div className="container mx-auto px-4 flex justify-between items-center relative z-10">
           <div className="flex items-center gap-3">
-            <Image src="/images/elt-logo.png" alt="ELT 26周年記念ロゴ" width={80} height={48} className="elt-logo" />
+            <Image src="/images/elt-logo.png" alt="ELT 27周年記念ロゴ" width={80} height={48} className="elt-logo" />
             <h1 className="text-xl font-bold font-heading">学外オリエンテーション</h1>
           </div>
           <div className="flex items-center gap-3">
