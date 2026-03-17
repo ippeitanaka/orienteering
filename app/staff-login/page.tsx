@@ -53,15 +53,24 @@ export default function StaffLoginPage() {
     setError("")
     setDebugInfo(null)
 
+    const normalizedName = name.trim()
+    const normalizedPasscode = passcode.trim()
+
+    if (!normalizedName || !normalizedPasscode) {
+      setError("スタッフ名とパスワードを入力してください")
+      setLoading(false)
+      return
+    }
+
     try {
-      console.log("スタッフログイン試行:", { name, passcode })
+      console.log("スタッフログイン試行:", { name: normalizedName, passcode: "***" })
 
       const response = await fetch("/api/staff/auth", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, passcode }),
+        body: JSON.stringify({ name: normalizedName, passcode: normalizedPasscode }),
       })
 
       const data = await response.json()

@@ -5,7 +5,10 @@ import { supabaseServer } from "@/lib/supabase-server"
 export async function POST(request: Request) {
   try {
     const requestData = await request.json()
-    const { name, passcode } = requestData
+    const rawName = requestData?.name
+    const rawPasscode = requestData?.passcode ?? requestData?.password
+    const name = typeof rawName === "string" ? rawName.trim() : ""
+    const passcode = typeof rawPasscode === "string" ? rawPasscode.trim() : ""
 
     console.log("スタッフログイン試行:", { name, passcode: "***" })
 
