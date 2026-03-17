@@ -336,6 +336,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   // チームの位置情報を更新する関数
   const refreshTeamLocations = async () => {
     if (isUpdatingLocations) return
+    if (typeof document !== "undefined" && document.hidden) return
 
     setIsUpdatingLocations(true)
     try {

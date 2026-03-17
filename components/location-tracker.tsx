@@ -32,12 +32,26 @@ export default function LocationTracker({ onLocationUpdate }: LocationTrackerPro
   const [isMounted, setIsMounted] = useState(false)
   const [updateCountdown, setUpdateCountdown] = useState(updateInterval)
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [deviceId, setDeviceId] = useState<string | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
 
     // クライアントサイドでのみ実行されるコード
     if (typeof window !== "undefined") {
+      // デバイスを識別する永続IDを作成/復元
+      const existingDeviceId = localStorage.getItem("teamLocationDeviceId")
+      if (existingDeviceId) {
+        setDeviceId(existingDeviceId)
+      } else {
+        const generatedDeviceId =
+          (typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`) || `${Date.now()}`
+        localStorage.setItem("teamLocationDeviceId", generatedDeviceId)
+        setDeviceId(generatedDeviceId)
+      }
+
       // チームIDを取得
       const storedTeamId = localStorage.getItem("teamId")
       if (storedTeamId) {
@@ -214,11 +228,11 @@ export default function LocationTracker({ onLocationUpdate }: LocationTrackerPro
   }
 
   const updateTeamLocationOnServer = async (latitude: number, longitude: number) => {
-    if (!teamId) return
+    if (!teamId || !deviceId) return
     setIsUpdating(true)
 
     try {
-      await updateTeamLocation(teamId, latitude, longitude)
+      await updateTeamLocation(teamId, latitude, longitude, deviceId)
       const now = new Date().toLocaleTimeString()
       setStatus(`最終更新: ${now}`)
       setLastUpdateTime(now)
@@ -236,11 +250,12 @@ export default function LocationTracker({ onLocationUpdate }: LocationTrackerPro
       }
     } catch (error) {
       console.error("位置情報の更新に失敗しました:", error)
-      setStatus("位置情報の更新に失敗しました")
+      const message = error instanceof Error ? error.message : "位置情報の更新に失敗しました"
+      setStatus(message)
 
       toast({
         title: "エラー",
-        description: "位置情報の更新に失敗しました",
+        description: message,
         variant: "destructive",
         duration: 3000,
       })

@@ -49,15 +49,19 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
 
     fetchData()
 
-    // 1分ごとにチームの位置情報を更新
+    // 無料運用を意識して更新回数を抑える
     const interval = setInterval(async () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return
+      }
+
       try {
         const locationsData = await getTeamLocations()
         setTeamLocations(locationsData)
       } catch (err) {
         console.error("Failed to update team locations:", err)
       }
-    }, 60000)
+    }, 120000)
 
     return () => clearInterval(interval)
   }, [])

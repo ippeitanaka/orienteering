@@ -76,46 +76,31 @@ export async function getTeamLocations(): Promise<TeamLocation[]> {
   return data || []
 }
 
-export async function updateTeamLocation(teamId: number, latitude: number, longitude: number): Promise<any> {
+export async function updateTeamLocation(
+  teamId: number,
+  latitude: number,
+  longitude: number,
+  deviceId?: string,
+): Promise<any> {
   try {
-    // 古い位置情報を削除
-    const { error: deleteError } = await supabase.from("team_locations").delete().eq("team_id", teamId)
+    const response = await fetch("/api/team-location", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ teamId, latitude, longitude, deviceId }),
+    })
 
-    if (deleteError) {
-      console.error("Error deleting old team location:", deleteError)
-      throw deleteError
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data?.error || `API responded with status: ${response.status}`)
     }
 
-    // 新しい位置情報を追加
-    const { data, error } = await supabase.from("team_locations").insert([{ team_id: teamId, latitude, longitude }])
-
-    if (error) {
-      console.error("Error updating team location:", error)
-      throw error
-    }
-
-    return { success: true, data }
+    return data
   } catch (error) {
     console.error("Error in updateTeamLocation:", error)
-    // APIエンドポイントを使用してフォールバック
-    try {
-      const response = await fetch("/api/team-location", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ teamId, latitude, longitude }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`API responded with status: ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (apiError) {
-      console.error("API fallback also failed:", apiError)
-      throw apiError
-    }
+    throw error
   }
 }
 

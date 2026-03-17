@@ -41,6 +41,15 @@ CREATE TABLE IF NOT EXISTS team_locations (
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- 4.5. Team location locks table (チーム位置共有ロック: 1チーム1端末)
+CREATE TABLE IF NOT EXISTS team_location_locks (
+  team_id INTEGER PRIMARY KEY REFERENCES teams(id) ON DELETE CASCADE,
+  device_id TEXT NOT NULL,
+  last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- 5. Timer settings table (タイマー設定)
 CREATE TABLE IF NOT EXISTS timer_settings (
   id SERIAL PRIMARY KEY,
@@ -64,6 +73,7 @@ CREATE TABLE IF NOT EXISTS staff (
 CREATE INDEX IF NOT EXISTS idx_checkins_team_id ON checkins(team_id);
 CREATE INDEX IF NOT EXISTS idx_checkins_checkpoint_id ON checkins(checkpoint_id);
 CREATE INDEX IF NOT EXISTS idx_team_locations_team_id ON team_locations(team_id);
+CREATE INDEX IF NOT EXISTS idx_team_location_locks_last_seen ON team_location_locks(last_seen);
 CREATE INDEX IF NOT EXISTS idx_staff_checkpoint_id ON staff(checkpoint_id);
 
 -- Enable Row Level Security (RLS) - optional, can be customized later

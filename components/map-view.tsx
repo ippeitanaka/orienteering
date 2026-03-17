@@ -37,15 +37,19 @@ export default function MapView({ teams }: MapViewProps) {
 
     fetchData()
 
-    // 1分ごとにチームの位置情報を更新
+    // 無料枠を圧迫しないよう、更新頻度を控えめにする
     const interval = setInterval(async () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return
+      }
+
       try {
         const locationsData = await getTeamLocations()
         setTeamLocations(locationsData)
       } catch (err) {
         console.error("Failed to update team locations:", err)
       }
-    }, 60000)
+    }, 120000)
 
     return () => clearInterval(interval)
   }, [])

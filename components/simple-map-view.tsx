@@ -48,17 +48,21 @@ export default function SimpleMapView({ teams }: SimpleMapViewProps) {
       fetchData()
     }
 
-    // 1分ごとにチームの位置情報を更新
+    // 無料運用を意識して更新回数を抑える
     let interval: NodeJS.Timeout | null = null
     if (isMounted) {
       interval = setInterval(async () => {
+        if (typeof document !== "undefined" && document.hidden) {
+          return
+        }
+
         try {
           const locationsData = await getTeamLocations()
           setTeamLocations(locationsData)
         } catch (err) {
           console.error("Failed to update team locations:", err)
         }
-      }, 60000)
+      }, 120000)
     }
 
     return () => {
