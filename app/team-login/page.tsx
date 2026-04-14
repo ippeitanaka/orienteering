@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,9 @@ export default function TeamLoginPage() {
   const [error, setError] = useState("")
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get("redirect")
+  const isCheckpointRedirect = redirectPath?.startsWith("/checkpoint/")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,8 +59,6 @@ export default function TeamLoginPage() {
         localStorage.setItem("teamCode", data.team.team_code || "")
       }
 
-      const redirectPath =
-        typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null
       router.push(redirectPath || "/dashboard")
     } catch (err) {
       console.error("Login error:", err)
@@ -93,6 +94,13 @@ export default function TeamLoginPage() {
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-4">
+                {isCheckpointRedirect && (
+                  <Alert>
+                    <AlertDescription>
+                      QR からチェックポイントを開きました。ログイン後は元のチェックポイント画面に戻り、そのままポイント加算に進めます。
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="teamCode" className="flex items-center gap-2">
                     <Hash className="h-4 w-4 text-primary" />

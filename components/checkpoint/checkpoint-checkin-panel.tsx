@@ -117,6 +117,12 @@ export default function CheckpointCheckinPanel({
             <AlertTitle>チームログインが必要です</AlertTitle>
             <AlertDescription>
               <p>チェックインするには、先にチームアカウントでログインしてください。</p>
+              <p className="mt-2 text-sm">
+                未ログインのスマホで QR を読み取った場合も、このチェックポイント画面は開きますが、その時点ではポイントは加算されません。
+              </p>
+              <p className="mt-2 text-sm">
+                下のボタンからログインすると、このチェックポイントページに戻ってそのままチェックインできます。
+              </p>
               <div className="mt-3">
                 <Link href={loginHref}>
                   <Button className="gap-2">
