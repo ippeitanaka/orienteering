@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CheckCircle, AlertCircle } from "lucide-react"
-import type { Team } from "@/lib/supabase"
+import { addPointsToTeam, type Team } from "@/lib/supabase"
 
 interface AddPointsFormProps {
   teams: Team[]
@@ -29,21 +29,13 @@ export default function AddPointsForm({ teams = [], onSuccess }: AddPointsFormPr
     setStatus(null)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const result = await addPointsToTeam(Number.parseInt(teamId, 10), points)
+      setStatus(result)
 
-      setStatus({
-        success: true,
-        message: `${points}ポイントを追加しました`,
-      })
-
-      // Reset form
-      setPoints(0)
-
-      if (onSuccess) {
-        setTimeout(() => {
-          onSuccess()
-        }, 1000)
+      if (result.success) {
+        setPoints(0)
+        setTeamId("")
+        onSuccess?.()
       }
     } catch (error) {
       console.error("Error adding points:", error)

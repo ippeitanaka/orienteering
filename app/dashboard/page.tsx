@@ -1,19 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { getTeams, type Team } from "@/lib/supabase"
+import { getCheckpoints, getTeams, type Checkpoint, type Team } from "@/lib/supabase"
 import TeamSelector from "@/components/team-selector"
 import LocationTracker from "@/components/location-tracker"
-import { Map, Trophy, Home, HelpCircle, Users, MapPin } from "lucide-react"
+import { Crosshair, Home, HelpCircle, Map, MapPin, Sparkles, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import Scoreboard from "@/components/scoreboard"
 import dynamic from "next/dynamic"
 import SimpleFallbackMap from "@/components/simple-fallback-map"
 import CountdownTimer from "@/components/countdown-timer"
+import { calculateDistanceMeters, formatDistance } from "@/lib/utils"
 
 // BasicMapをクライアントサイドのみで読み込む
 const BasicMap = dynamic(() => import("@/components/basic-map"), {
@@ -39,6 +41,10 @@ export default function Dashboard() {
   const [mapLoadAttempts, setMapLoadAttempts] = useState(0)
   const [mapKey, setMapKey] = useState(0) // マップの強制再レンダリング用のキー
   const [mapLoadTimeout, setMapLoadTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
+  const [activeArrivalCheckpoint, setActiveArrivalCheckpoint] = useState<Checkpoint | null>(null)
+  const arrivalTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const celebratedCheckpointIdsRef = useRef<Set<number>>(new Set())
 
   useEffect(() => {
     // クライアントサイドでのみ実行されるコードをここに記述
@@ -46,8 +52,9 @@ export default function Dashboard() {
 
     async function fetchData() {
       try {
-        const teamsData = await getTeams()
+        const [teamsData, checkpointData] = await Promise.all([getTeams(), getCheckpoints()])
         setTeams(teamsData)
+        setCheckpoints(checkpointData)
 
         // ローカルストレージから選択済みのチームを復元
         if (typeof window !== "undefined") {
@@ -79,6 +86,13 @@ export default function Dashboard() {
       }
     }
   }, [isMounted, mapLoadTimeout])
+
+  useEffect(() => {
+    if (!selectedTeam) {
+      celebratedCheckpointIdsRef.current.clear()
+      setActiveArrivalCheckpoint(null)
+    }
+  }, [selectedTeam])
 
   const handleTeamSelect = (team: Team) => {
     setSelectedTeam(team)
@@ -123,6 +137,38 @@ export default function Dashboard() {
   const handleLocationUpdate = () => {
     // マップを強制的に再レンダリング
     setMapKey((prev) => prev + 1)
+  }
+
+  const handlePositionChange = ({ latitude, longitude }: { latitude: number; longitude: number }) => {
+    if (!checkpoints.length) {
+      return
+    }
+
+    let nearestCheckpoint: Checkpoint | null = null
+    let nearestDistance = Number.POSITIVE_INFINITY
+
+    for (const checkpoint of checkpoints) {
+      const distance = calculateDistanceMeters(latitude, longitude, checkpoint.latitude, checkpoint.longitude)
+      if (distance < nearestDistance) {
+        nearestCheckpoint = checkpoint
+        nearestDistance = distance
+      }
+    }
+
+    if (!nearestCheckpoint || nearestDistance > 40 || celebratedCheckpointIdsRef.current.has(nearestCheckpoint.id)) {
+      return
+    }
+
+    celebratedCheckpointIdsRef.current.add(nearestCheckpoint.id)
+    setActiveArrivalCheckpoint(nearestCheckpoint)
+
+    if (arrivalTimeoutRef.current) {
+      clearTimeout(arrivalTimeoutRef.current)
+    }
+
+    arrivalTimeoutRef.current = setTimeout(() => {
+      setActiveArrivalCheckpoint(null)
+    }, 6000)
   }
 
   // サーバーサイドレンダリング時は最小限の内容を表示
@@ -263,6 +309,31 @@ export default function Dashboard() {
 
                 <TabsContent value="map" className="p-4 slide-in">
                   <div className="relative">
+                    {activeArrivalCheckpoint ? (
+                      <Alert className="mb-4 border-emerald-300 bg-gradient-to-r from-emerald-100 via-lime-50 to-emerald-100 text-emerald-950 shadow-xl animate-checkpoint-burst">
+                        <Sparkles className="h-5 w-5" />
+                        <AlertTitle className="flex items-center gap-2 text-base">
+                          チェックポイント到達圏内
+                          {activeArrivalCheckpoint.is_moving ? (
+                            <span className="rounded-full bg-emerald-700 px-2 py-0.5 text-xs text-white">移動中</span>
+                          ) : null}
+                        </AlertTitle>
+                        <AlertDescription>
+                          <div className="flex items-center gap-2">
+                            <Crosshair className="h-4 w-4" />
+                            <span className="font-semibold">{activeArrivalCheckpoint.name}</span>
+                            <span className="text-sm text-emerald-800">+{activeArrivalCheckpoint.point_value}pt</span>
+                          </div>
+                          <p className="mt-1 text-sm">
+                            {activeArrivalCheckpoint.assigned_staff_name
+                              ? `${activeArrivalCheckpoint.assigned_staff_name} が移動中のチェックポイントです。`
+                              : "チェックポイントの近くまで来ています。"}
+                            <span className="ml-1">いまの位置から狙ってください。</span>
+                          </p>
+                        </AlertDescription>
+                      </Alert>
+                    ) : null}
+
                     {mapLoadFailed ? (
                       <SimpleFallbackMap teams={teams} onRetry={handleRetryMapLoad} />
                     ) : (
@@ -273,8 +344,13 @@ export default function Dashboard() {
                       />
                     )}
                     <div className="mt-4">
-                      <LocationTracker onLocationUpdate={handleLocationUpdate} />
+                      <LocationTracker onLocationUpdate={handleLocationUpdate} onPositionChange={handlePositionChange} />
                     </div>
+                    {activeArrivalCheckpoint ? (
+                      <div className="mt-3 rounded-lg bg-emerald-950/90 px-4 py-3 text-sm text-emerald-50 shadow-lg">
+                        {activeArrivalCheckpoint.name} まであと最大 {formatDistance(40)} 圏内です。スタッフチェックインの準備をしてください。
+                      </div>
+                    ) : null}
                   </div>
                 </TabsContent>
 

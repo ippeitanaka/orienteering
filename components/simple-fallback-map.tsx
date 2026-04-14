@@ -42,7 +42,8 @@ export default function SimpleFallbackMap({ teams, onRetry }: SimpleFallbackMapP
       }
 
       try {
-        const locationsData = await getTeamLocations()
+        const [checkpointsData, locationsData] = await Promise.all([getCheckpoints(), getTeamLocations()])
+        setCheckpoints(checkpointsData)
         setTeamLocations(locationsData)
       } catch (err) {
         console.error("Failed to update team locations:", err)

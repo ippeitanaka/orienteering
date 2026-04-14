@@ -1,6 +1,19 @@
 import { NextResponse } from "next/server"
 import { supabaseServer } from "@/lib/supabase-server"
 
+const normalizePointValue = (value: unknown) => {
+  if (typeof value === "number") {
+    return value
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseInt(value, 10)
+    return Number.isNaN(parsed) ? 0 : parsed
+  }
+
+  return 0
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     if (!supabaseServer) {
@@ -53,8 +66,36 @@ export async function GET(request: Request, { params }: { params: { id: string }
       )
     }
 
+    const { data: assignedStaff } = await supabaseServer
+      .from("staff")
+      .select("id, name")
+      .eq("checkpoint_id", checkpointId)
+      .maybeSingle()
+
+    const { data: latestLocation } = await supabaseServer
+      .from("staff_locations")
+      .select("latitude, longitude, timestamp")
+      .eq("staff_id", assignedStaff?.id || -1)
+      .order("timestamp", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
     console.log("Checkpoint found:", data)
-    return NextResponse.json({ data })
+    return NextResponse.json({
+      data: {
+        ...data,
+        point_value: normalizePointValue(data.point_value),
+        is_moving: !!assignedStaff,
+        assigned_staff_id: assignedStaff?.id ?? null,
+        assigned_staff_name: assignedStaff?.name ?? null,
+        base_latitude: data.latitude,
+        base_longitude: data.longitude,
+        latitude: latestLocation?.latitude ?? data.latitude,
+        longitude: latestLocation?.longitude ?? data.longitude,
+        location_source: assignedStaff ? (latestLocation ? "staff" : "static-fallback") : "static",
+        last_location_update: latestLocation?.timestamp ?? null,
+      },
+    })
   } catch (error) {
     console.error("Error in GET /api/checkpoints/[id]:", error)
     return NextResponse.json(
@@ -78,7 +119,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const body = await request.json()
 
     // 更新可能なフィールドを制限
-    const { name, description, latitude, longitude, point_value } = body
+    const { name, description, latitude, longitude, point_value, assigned_staff_id } = body
     const updateData: Record<string, any> = {}
 
     if (name !== undefined) updateData.name = name
@@ -105,6 +146,23 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       return NextResponse.json({ error: "Checkpoint not found", success: false }, { status: 404 })
     }
 
+    const numericCheckpointId = Number.parseInt(checkpointId, 10)
+    await supabaseServer.from("staff").update({ checkpoint_id: null }).eq("checkpoint_id", numericCheckpointId)
+
+    if (assigned_staff_id) {
+      await supabaseServer.from("staff").update({ checkpoint_id: null }).eq("id", assigned_staff_id)
+
+      const { error: assignError } = await supabaseServer
+        .from("staff")
+        .update({ checkpoint_id: numericCheckpointId })
+        .eq("id", assigned_staff_id)
+
+      if (assignError) {
+        console.error("Error assigning moving checkpoint staff:", assignError)
+        return NextResponse.json({ error: assignError.message, success: false }, { status: 500 })
+      }
+    }
+
     return NextResponse.json({ data: data[0], success: true, message: "チェックポイントを更新しました" })
   } catch (error) {
     console.error("Error in PUT /api/checkpoints/[id]:", error)
@@ -120,6 +178,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     }
 
     const checkpointId = params.id
+    const numericCheckpointId = Number.parseInt(checkpointId, 10)
 
     // チェックポイントが存在するか確認
     const { data: checkpoint, error: checkError } = await supabaseServer
@@ -131,6 +190,8 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     if (checkError || !checkpoint) {
       return NextResponse.json({ error: "Checkpoint not found", success: false }, { status: 404 })
     }
+
+    await supabaseServer.from("staff").update({ checkpoint_id: null }).eq("checkpoint_id", numericCheckpointId)
 
     // チェックポイントを削除
     const { error } = await supabaseServer.from("checkpoints").delete().eq("id", checkpointId)

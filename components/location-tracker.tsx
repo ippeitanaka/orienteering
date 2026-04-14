@@ -14,9 +14,10 @@ export const LOCATION_UPDATED_EVENT = "locationUpdated"
 
 interface LocationTrackerProps {
   onLocationUpdate?: () => void // 位置情報更新時のコールバック
+  onPositionChange?: (position: { latitude: number; longitude: number }) => void
 }
 
-export default function LocationTracker({ onLocationUpdate }: LocationTrackerProps) {
+export default function LocationTracker({ onLocationUpdate, onPositionChange }: LocationTrackerProps) {
   const { toast } = useToast()
   const [teamId, setTeamId] = useState<number | null>(null)
   const [status, setStatus] = useState<string>("位置情報を取得中...")
@@ -237,6 +238,7 @@ export default function LocationTracker({ onLocationUpdate }: LocationTrackerPro
       setStatus(`最終更新: ${now}`)
       setLastUpdateTime(now)
       setLastPosition({ latitude, longitude })
+      onPositionChange?.({ latitude, longitude })
       console.log("位置情報を更新しました:", latitude, longitude)
 
       // 位置情報更新イベントを発火

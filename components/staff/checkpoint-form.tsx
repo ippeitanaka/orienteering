@@ -2,15 +2,16 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CheckCircle, AlertCircle } from "lucide-react"
-import { createCheckpoint, updateCheckpoint, type Checkpoint } from "@/lib/supabase"
+import { createCheckpoint, getStaffMembers, updateCheckpoint, type Checkpoint, type StaffMember } from "@/lib/supabase"
 
 interface CheckpointFormProps {
   checkpoint?: Checkpoint
@@ -24,10 +25,26 @@ export default function CheckpointForm({ checkpoint, onSuccess, onCancel }: Chec
   const [latitude, setLatitude] = useState(checkpoint?.latitude?.toString() || "")
   const [longitude, setLongitude] = useState(checkpoint?.longitude?.toString() || "")
   const [pointValue, setPointValue] = useState(checkpoint?.point_value?.toString() || "10")
+  const [checkpointType, setCheckpointType] = useState<"static" | "moving">(checkpoint?.is_moving ? "moving" : "static")
+  const [assignedStaffId, setAssignedStaffId] = useState(checkpoint?.assigned_staff_id?.toString() || "")
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<{ success?: boolean; message?: string } | null>(null)
 
   const isEditing = !!checkpoint
+
+  useEffect(() => {
+    const fetchStaffMembers = async () => {
+      try {
+        const members = await getStaffMembers()
+        setStaffMembers(members)
+      } catch (error) {
+        console.error("Error fetching staff members:", error)
+      }
+    }
+
+    fetchStaffMembers()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,6 +57,7 @@ export default function CheckpointForm({ checkpoint, onSuccess, onCancel }: Chec
       latitude: Number.parseFloat(latitude),
       longitude: Number.parseFloat(longitude),
       point_value: pointValue, // 文字列のまま送信
+      assigned_staff_id: checkpointType === "moving" && assignedStaffId ? Number.parseInt(assignedStaffId, 10) : null,
     }
 
     try {
@@ -120,6 +138,40 @@ export default function CheckpointForm({ checkpoint, onSuccess, onCancel }: Chec
               rows={3}
             />
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="checkpointType">チェックポイント種別</Label>
+            <Select value={checkpointType} onValueChange={(value) => setCheckpointType(value as "static" | "moving")}>
+              <SelectTrigger id="checkpointType">
+                <SelectValue placeholder="種別を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="static">固定チェックポイント</SelectItem>
+                <SelectItem value="moving">移動チェックポイント</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {checkpointType === "moving" && (
+            <div className="space-y-2">
+              <Label htmlFor="assignedStaff">担当スタッフ</Label>
+              <Select value={assignedStaffId} onValueChange={setAssignedStaffId}>
+                <SelectTrigger id="assignedStaff">
+                  <SelectValue placeholder="スタッフを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffMembers.map((staff) => (
+                    <SelectItem key={staff.id} value={staff.id.toString()}>
+                      {staff.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                担当スタッフの現在地がこのチェックポイントの位置として表示されます。
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

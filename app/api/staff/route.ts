@@ -5,10 +5,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const staffId = searchParams.get("id")
 
-  if (!staffId) {
-    return NextResponse.json({ error: "Staff ID is required" }, { status: 400 })
-  }
-
   // Supabaseサーバークライアントが利用可能か確認
   if (!supabaseServer) {
     console.error("Supabase server client is not available")
@@ -28,6 +24,17 @@ export async function GET(request: Request) {
   }
 
   try {
+    if (!staffId) {
+      const { data, error } = await supabaseServer.from("staff").select("id, name, checkpoint_id").order("id")
+
+      if (error) {
+        console.error("Error fetching staff list:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ data: data || [] })
+    }
+
     console.log(`Fetching staff with ID: ${staffId}`)
 
     // まず、スタッフが存在するか確認

@@ -28,6 +28,13 @@ export interface Checkpoint {
   latitude: number
   longitude: number
   point_value: number
+  is_moving?: boolean
+  assigned_staff_id?: number | null
+  assigned_staff_name?: string | null
+  location_source?: "static" | "staff" | "static-fallback"
+  base_latitude?: number
+  base_longitude?: number
+  last_location_update?: string | null
 }
 
 export interface Team {
@@ -48,6 +55,54 @@ export interface TeamLocation {
   timestamp: string
 }
 
+export interface StaffMember {
+  id: number
+  name: string
+  checkpoint_id: number | null
+}
+
+export interface EventReportSummary {
+  generatedAt: string
+  eventStatus: "running" | "finished" | "not_started"
+  timer: TimerSettings | null
+  totalTeams: number
+  totalCheckpoints: number
+  totalCheckins: number
+  movingCheckpointCount: number
+  averageCheckinsPerTeam: number
+  topTeamName: string | null
+  topScore: number
+  lastCheckinAt: string | null
+}
+
+export interface EventReportTeamRow {
+  rank: number
+  teamId: number
+  teamName: string
+  teamColor: string
+  score: number
+  checkins: number
+  checkpointsVisited: string[]
+  firstCheckinAt: string | null
+  lastCheckinAt: string | null
+}
+
+export interface EventReportCheckpointRow {
+  checkpointId: number
+  checkpointName: string
+  pointValue: number
+  visits: number
+  uniqueTeams: number
+  isMoving: boolean
+  assignedStaffName: string | null
+}
+
+export interface EventReport {
+  summary: EventReportSummary
+  teams: EventReportTeamRow[]
+  checkpoints: EventReportCheckpointRow[]
+}
+
 // 既存の型定義に追加
 export interface TimerSettings {
   id: number
@@ -59,12 +114,14 @@ export interface TimerSettings {
 }
 
 export async function getCheckpoints(): Promise<Checkpoint[]> {
-  const { data, error } = await supabase.from("checkpoints").select("*").order("id")
-  if (error) {
-    console.error("Error fetching checkpoints:", error)
-    throw error
+  const response = await fetch("/api/checkpoints", { cache: "no-store" })
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch checkpoints")
   }
-  return data || []
+
+  return result.data || []
 }
 
 export async function getTeamLocations(): Promise<TeamLocation[]> {
@@ -74,6 +131,24 @@ export async function getTeamLocations(): Promise<TeamLocation[]> {
     throw error
   }
   return data || []
+}
+
+export async function updateStaffLocation(staffId: number, latitude: number, longitude: number): Promise<any> {
+  const response = await fetch("/api/staff-location", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ staffId, latitude, longitude }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to update staff location")
+  }
+
+  return result
 }
 
 export async function updateTeamLocation(
@@ -111,6 +186,17 @@ export async function getTeams(): Promise<Team[]> {
     throw error
   }
   return data || []
+}
+
+export async function getStaffMembers(): Promise<StaffMember[]> {
+  const response = await fetch("/api/staff", { cache: "no-store" })
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch staff members")
+  }
+
+  return result.data || []
 }
 
 export async function getTeamCheckins(teamId: number): Promise<any[]> {
@@ -190,14 +276,21 @@ export async function createCheckpoint(
   checkpointData: any,
 ): Promise<{ success: boolean; message: string; data?: Checkpoint }> {
   try {
-    const { data, error } = await supabase.from("checkpoints").insert([checkpointData]).select().single()
+    const response = await fetch("/api/checkpoints", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(checkpointData),
+    })
 
-    if (error) {
-      console.error("Error creating checkpoint:", error)
-      return { success: false, message: error.message }
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      return { success: false, message: result.error || "チェックポイントの作成に失敗しました" }
     }
 
-    return { success: true, message: "チェックポイントを作成しました", data }
+    return { success: true, message: result.message || "チェックポイントを作成しました", data: result.data }
   } catch (error: any) {
     console.error("Error creating checkpoint:", error)
     return { success: false, message: error.message }
@@ -209,19 +302,21 @@ export async function updateCheckpoint(
   checkpointData: any,
 ): Promise<{ success: boolean; message: string; data?: Checkpoint }> {
   try {
-    const { data, error } = await supabase
-      .from("checkpoints")
-      .update(checkpointData)
-      .eq("id", checkpointId)
-      .select()
-      .single()
+    const response = await fetch(`/api/checkpoints/${checkpointId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(checkpointData),
+    })
 
-    if (error) {
-      console.error("Error updating checkpoint:", error)
-      return { success: false, message: error.message }
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      return { success: false, message: result.error || "チェックポイントの更新に失敗しました" }
     }
 
-    return { success: true, message: "チェックポイントを更新しました", data }
+    return { success: true, message: result.message || "チェックポイントを更新しました", data: result.data }
   } catch (error: any) {
     console.error("Error updating checkpoint:", error)
     return { success: false, message: error.message }
@@ -339,4 +434,39 @@ export async function stopTimer(): Promise<boolean> {
     console.error("Error stopping timer:", error)
     return false
   }
+}
+
+export async function addPointsToTeam(teamId: number, points: number): Promise<{ success: boolean; message: string }> {
+  const response = await fetch(`/api/teams/${teamId}/add-points`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ points }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok || !result.success) {
+    return {
+      success: false,
+      message: result.error || "ポイントの追加に失敗しました",
+    }
+  }
+
+  return {
+    success: true,
+    message: result.message || "ポイントを更新しました",
+  }
+}
+
+export async function getEventReport(): Promise<EventReport> {
+  const response = await fetch("/api/reports/event-summary", { cache: "no-store" })
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch event report")
+  }
+
+  return result.data
 }

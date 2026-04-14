@@ -340,8 +340,10 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
     setIsUpdatingLocations(true)
     try {
-      const locationsData = await getTeamLocations()
+      const [checkpointsData, locationsData] = await Promise.all([getCheckpoints(), getTeamLocations()])
+      setCheckpoints(checkpointsData)
       setTeamLocations(locationsData)
+      updateCheckpointMarkers(checkpointsData)
       updateTeamMarkers(locationsData)
       setLastUpdateTime(new Date().toLocaleTimeString())
       console.log("チームの位置情報を更新しました:", new Date().toLocaleTimeString())

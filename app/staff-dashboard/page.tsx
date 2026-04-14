@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Scoreboard from "@/components/scoreboard"
 import AddPointsForm from "@/components/staff/add-points-form"
 import CheckpointManager from "@/components/staff/checkpoint-manager"
+import EventReport from "@/components/staff/event-report"
+import StaffLocationTracker from "@/components/staff/staff-location-tracker"
 import TeamManager from "@/components/staff/team-manager"
 import { getTeams, type Team } from "@/lib/supabase"
 
@@ -164,8 +166,12 @@ export default function StaffDashboardPage() {
           </div>
         </header>
 
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <StaffLocationTracker />
+        </div>
+
         <Tabs defaultValue="checkpoints" className="w-full">
-          <TabsList className="grid grid-cols-4 mb-4 sm:mb-6 md:mb-8 text-xs sm:text-sm">
+          <TabsList className="grid grid-cols-5 mb-4 sm:mb-6 md:mb-8 text-xs sm:text-sm">
             <TabsTrigger value="checkpoints" className="px-1 sm:px-2">
               チェックポイント
             </TabsTrigger>
@@ -177,6 +183,9 @@ export default function StaffDashboardPage() {
             </TabsTrigger>
             <TabsTrigger value="timer" className="px-1 sm:px-2">
               タイマー
+            </TabsTrigger>
+            <TabsTrigger value="report" className="px-1 sm:px-2">
+              レポート
             </TabsTrigger>
           </TabsList>
 
@@ -210,6 +219,10 @@ export default function StaffDashboardPage() {
 
           <TabsContent value="timer">
             <TimerControl />
+          </TabsContent>
+
+          <TabsContent value="report">
+            <EventReport />
           </TabsContent>
         </Tabs>
 

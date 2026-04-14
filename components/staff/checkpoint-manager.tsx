@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -117,6 +118,8 @@ export default function CheckpointManager() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>名前</TableHead>
+                  <TableHead>種別</TableHead>
+                  <TableHead>担当スタッフ</TableHead>
                   <TableHead>説明</TableHead>
                   <TableHead>位置</TableHead>
                   <TableHead>ポイント</TableHead>
@@ -126,7 +129,7 @@ export default function CheckpointManager() {
               <TableBody>
                 {checkpoints.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       チェックポイントがありません
                     </TableCell>
                   </TableRow>
@@ -135,9 +138,18 @@ export default function CheckpointManager() {
                     <TableRow key={checkpoint.id}>
                       <TableCell>{checkpoint.id}</TableCell>
                       <TableCell className="font-medium">{checkpoint.name}</TableCell>
+                      <TableCell>
+                        <Badge variant={checkpoint.is_moving ? "default" : "outline"}>
+                          {checkpoint.is_moving ? "移動" : "固定"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{checkpoint.assigned_staff_name || "-"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{checkpoint.description || "-"}</TableCell>
                       <TableCell className="text-xs">
                         {checkpoint.latitude.toFixed(6)}, {checkpoint.longitude.toFixed(6)}
+                        {checkpoint.location_source === "staff" ? (
+                          <p className="mt-1 text-[10px] text-primary">スタッフ位置を反映中</p>
+                        ) : null}
                       </TableCell>
                       <TableCell>{checkpoint.point_value}</TableCell>
                       <TableCell className="text-right">

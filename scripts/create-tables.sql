@@ -69,12 +69,24 @@ CREATE TABLE IF NOT EXISTS staff (
   checkpoint_id INTEGER REFERENCES checkpoints(id) ON DELETE SET NULL
 );
 
+-- 7. Staff locations table (移動チェックポイント用スタッフ位置情報)
+CREATE TABLE IF NOT EXISTS staff_locations (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  staff_id INTEGER UNIQUE REFERENCES staff(id) ON DELETE CASCADE,
+  latitude DOUBLE PRECISION NOT NULL,
+  longitude DOUBLE PRECISION NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_checkins_team_id ON checkins(team_id);
 CREATE INDEX IF NOT EXISTS idx_checkins_checkpoint_id ON checkins(checkpoint_id);
 CREATE INDEX IF NOT EXISTS idx_team_locations_team_id ON team_locations(team_id);
 CREATE INDEX IF NOT EXISTS idx_team_location_locks_last_seen ON team_location_locks(last_seen);
 CREATE INDEX IF NOT EXISTS idx_staff_checkpoint_id ON staff(checkpoint_id);
+CREATE INDEX IF NOT EXISTS idx_staff_locations_staff_id ON staff_locations(staff_id);
 
 -- Enable Row Level Security (RLS) - optional, can be customized later
 -- ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
