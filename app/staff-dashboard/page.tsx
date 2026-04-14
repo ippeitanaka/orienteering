@@ -185,7 +185,7 @@ export default function StaffDashboardPage() {
           </TabsContent>
 
           <TabsContent value="teams">
-            <TeamManager />
+            <TeamManager onTeamsChanged={fetchData} />
           </TabsContent>
 
           <TabsContent value="scoreboard">

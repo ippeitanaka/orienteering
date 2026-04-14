@@ -10,7 +10,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import TeamForm from "@/components/staff/team-form"
 import { getTeams, type Team } from "@/lib/supabase"
 
-export default function TeamManager() {
+interface TeamManagerProps {
+  onTeamsChanged?: () => void
+}
+
+export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,6 +69,7 @@ export default function TeamManager() {
       }
 
       setIsDeleteDialogOpen(false)
+      onTeamsChanged?.()
       setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
     } catch (err) {
       console.error("Failed to delete team:", err)
@@ -74,6 +79,7 @@ export default function TeamManager() {
 
   const handleFormSuccess = () => {
     setIsFormDialogOpen(false)
+    onTeamsChanged?.()
     setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
   }
 
