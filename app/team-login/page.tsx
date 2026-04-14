@@ -56,8 +56,9 @@ export default function TeamLoginPage() {
         localStorage.setItem("teamCode", data.team.team_code || "")
       }
 
-      // ダッシュボードにリダイレクト
-      router.push("/dashboard")
+      const redirectPath =
+        typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null
+      router.push(redirectPath || "/dashboard")
     } catch (err) {
       console.error("Login error:", err)
       setError("ログイン処理中にエラーが発生しました")

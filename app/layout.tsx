@@ -4,6 +4,7 @@ import { BIZ_UDGothic } from "next/font/google"
 import { Roboto_Mono } from "next/font/google"
 import { Oswald } from "next/font/google"
 import "./globals.css"
+import "leaflet/dist/leaflet.css"
 
 // 日本語フォントをUD BIZゴシックに変更
 const bizUdGothic = BIZ_UDGothic({

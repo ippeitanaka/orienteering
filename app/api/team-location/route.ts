@@ -3,6 +3,18 @@ import { supabaseServer } from "@/lib/supabase-server"
 
 const LOCK_TIMEOUT_MINUTES = 10
 
+const isAccuracyColumnMissing = (error: { code?: string; message?: string } | null) => {
+  if (!error) {
+    return false
+  }
+
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    (typeof error.message === "string" && error.message.toLowerCase().includes("accuracy"))
+  )
+}
+
 export async function POST(request: Request) {
   try {
     if (!supabaseServer) {
@@ -10,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { teamId, latitude, longitude, deviceId } = body
+  const { teamId, latitude, longitude, deviceId, accuracy } = body
 
     if (!teamId || latitude === undefined || longitude === undefined || !deviceId) {
       return NextResponse.json({ error: "Team ID, latitude, longitude and deviceId are required" }, { status: 400 })
@@ -91,7 +103,27 @@ export async function POST(request: Request) {
     }
 
     // 新しい位置情報を追加
-    const { error } = await supabaseServer.from("team_locations").insert([{ team_id: teamId, latitude, longitude }])
+    const locationRecord = {
+      team_id: teamId,
+      latitude,
+      longitude,
+      timestamp: now.toISOString(),
+      ...(typeof accuracy === "number" ? { accuracy } : {}),
+    }
+
+    let { error } = await supabaseServer.from("team_locations").insert([locationRecord])
+
+    if (error && isAccuracyColumnMissing(error)) {
+      const fallbackInsert = await supabaseServer.from("team_locations").insert([
+        {
+          team_id: teamId,
+          latitude,
+          longitude,
+          timestamp: now.toISOString(),
+        },
+      ])
+      error = fallbackInsert.error
+    }
 
     if (error) {
       console.error("Error updating team location:", error)

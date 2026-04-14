@@ -14,6 +14,20 @@ const normalizePointValue = (value: unknown) => {
   return 0
 }
 
+const generateQrToken = () => `cp_${crypto.randomUUID().replace(/-/g, "")}`
+
+const isQrTokenColumnMissing = (error: { code?: string; message?: string } | null) => {
+  if (!error) {
+    return false
+  }
+
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    (typeof error.message === "string" && error.message.toLowerCase().includes("qr_token"))
+  )
+}
+
 // チェックポイント一覧を取得
 export async function GET() {
   try {
@@ -107,6 +121,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Name, latitude, and longitude are required" }, { status: 400 })
     }
 
+    const qrToken = generateQrToken()
+
     // point_valueを文字列として保存
     const checkpointData = {
       name,
@@ -114,11 +130,30 @@ export async function POST(request: Request) {
       latitude,
       longitude,
       point_value: point_value ? String(point_value) : "0",
+      qr_token: qrToken,
     }
 
     console.log("Creating checkpoint with data:", checkpointData)
 
-    const { data, error } = await supabaseServer.from("checkpoints").insert([checkpointData]).select()
+    let { data, error } = await supabaseServer.from("checkpoints").insert([checkpointData]).select()
+
+    if (error && isQrTokenColumnMissing(error)) {
+      const fallbackResult = await supabaseServer
+        .from("checkpoints")
+        .insert([
+          {
+            name,
+            description,
+            latitude,
+            longitude,
+            point_value: point_value ? String(point_value) : "0",
+          },
+        ])
+        .select()
+
+      data = fallbackResult.data
+      error = fallbackResult.error
+    }
 
     if (error) {
       console.error("Error creating checkpoint:", error)

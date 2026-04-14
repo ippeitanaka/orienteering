@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Locate, MapPin, Users, RefreshCw } from "lucide-react"
-import { getCheckpoints, getTeamLocations, type Checkpoint, type Team, type TeamLocation } from "@/lib/supabase"
-import { LOCATION_UPDATED_EVENT } from "./location-tracker"
+import { getCheckpoints, getTeamLocations, supabase, type Checkpoint, type Team, type TeamLocation } from "@/lib/supabase"
+import { LOCATION_UPDATED_EVENT, type LocationPositionSnapshot } from "./location-tracker"
 import { useToast } from "@/hooks/use-toast"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -13,16 +13,20 @@ import { Label } from "@/components/ui/label"
 // BasicMapコンポーネントのpropsにonErrorを追加
 interface BasicMapProps {
   teams: Team[]
+  livePosition?: LocationPositionSnapshot | null
   onError?: () => void
 }
 
-export default function BasicMap({ teams, onError }: BasicMapProps) {
+export default function BasicMap({ teams, livePosition = null, onError }: BasicMapProps) {
   const { toast } = useToast()
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
   const [teamLocations, setTeamLocations] = useState<TeamLocation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [position, setPosition] = useState<[number, number] | null>(null)
+  const [position, setPosition] = useState<[number, number] | null>(
+    livePosition ? [livePosition.latitude, livePosition.longitude] : null,
+  )
+  const [positionAccuracy, setPositionAccuracy] = useState<number | null>(livePosition?.accuracy ?? null)
   const [locating, setLocating] = useState(false)
   const [mapInitialized, setMapInitialized] = useState(false)
   const [leafletLoaded, setLeafletLoaded] = useState(false)
@@ -46,10 +50,11 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   const teamMarkersRef = useRef<{ [key: number]: any }>({})
   const teamLabelsRef = useRef<{ [key: number]: any }>({})
   const currentPositionMarkerRef = useRef<any>(null)
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const leafletLoadAttemptsRef = useRef<number>(0)
-  const mapUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const mapInitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const currentPositionCircleRef = useRef<any>(null)
+  const leafletModuleRef = useRef<typeof import("leaflet") | null>(null)
+  const realtimeTeamSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const realtimeCheckpointSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const syncInFlightRef = useRef(false)
 
   // データの取得
   useEffect(() => {
@@ -70,11 +75,53 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     fetchData()
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+
+    setDebugInfo((prev) => prev + "\nLoading local Leaflet module...")
+
+    import("leaflet")
+      .then((leafletModule) => {
+        if (cancelled) {
+          return
+        }
+
+        leafletModuleRef.current = leafletModule
+        setLeafletLoaded(true)
+        setDebugInfo((prev) => prev + "\nLeaflet module loaded from local dependency")
+      })
+      .catch((loadError) => {
+        console.error("Failed to load Leaflet module:", loadError)
+        setDebugInfo(
+          (prev) => prev + `\nFailed to load local Leaflet module: ${loadError instanceof Error ? loadError.message : String(loadError)}`,
+        )
+        setError("マップライブラリの読み込みに失敗しました")
+        setLoading(false)
+        if (onError) onError()
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [onError])
+
   // 位置情報更新イベントのリスナーを設定
   useEffect(() => {
-    const handleLocationUpdate = () => {
+    const handleLocationUpdate = (event: Event) => {
+      const locationEvent = event as CustomEvent<LocationPositionSnapshot>
+      const snapshot = locationEvent.detail
+
+      if (snapshot) {
+        setPosition([snapshot.latitude, snapshot.longitude])
+        setPositionAccuracy(snapshot.accuracy ?? null)
+
+        if (mapInitialized) {
+          updateCurrentPositionMarker(snapshot.latitude, snapshot.longitude, snapshot.accuracy ?? null)
+        }
+      }
+
       console.log("位置情報更新イベントを検知しました")
-      refreshTeamLocations()
+      void refreshMapData({ includeCheckpoints: false, force: true })
     }
 
     // イベントリスナーを追加
@@ -84,7 +131,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     return () => {
       window.removeEventListener(LOCATION_UPDATED_EVENT, handleLocationUpdate)
     }
-  }, [])
+  }, [mapInitialized])
 
   // 自動更新の状態が変わったときの処理
   useEffect(() => {
@@ -160,81 +207,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     }
   }, [selectedCheckpointId, mapInitialized, checkpoints])
 
-  // Leafletスクリプトとスタイルを読み込む
-  useEffect(() => {
-    const loadLeafletResources = async () => {
-      try {
-        // すでに読み込まれているか確認
-        if (typeof window !== "undefined" && window.L) {
-          console.log("Leaflet already loaded")
-          setLeafletLoaded(true)
-          setDebugInfo((prev) => prev + "\nLeaflet already loaded in window object")
-          return
-        }
-
-        setDebugInfo((prev) => prev + "\nAttempting to load Leaflet resources...")
-        leafletLoadAttemptsRef.current += 1
-
-        // CSSを読み込む
-        await new Promise<void>((resolve, reject) => {
-          const link = document.createElement("link")
-          link.rel = "stylesheet"
-          link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          link.crossOrigin = ""
-          link.onload = () => resolve()
-          link.onerror = () => reject(new Error("Failed to load Leaflet CSS"))
-          document.head.appendChild(link)
-        })
-
-        // JSを読み込む
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script")
-          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          script.crossOrigin = ""
-          script.onload = () => resolve()
-          script.onerror = () => reject(new Error("Failed to load Leaflet JS"))
-          document.head.appendChild(script)
-        })
-
-        console.log("Leaflet resources loaded successfully")
-        setLeafletLoaded(true)
-      } catch (err) {
-        console.error("Failed to load Leaflet resources:", err)
-        setDebugInfo(
-          (prev) => prev + `\nFailed to load Leaflet resources: ${err instanceof Error ? err.message : String(err)}`,
-        )
-        setError("マップライブラリの読み込みに失敗しました")
-        setLoading(false)
-        if (onError) onError()
-      }
-    }
-
-    loadLeafletResources()
-
-    // タイムアウト処理 - 120秒に延長
-    loadingTimerRef.current = setTimeout(() => {
-      if (!leafletLoaded) {
-        console.warn("Leaflet loading timeout")
-        setDebugInfo((prev) => prev + "\nLeaflet loading timeout after 120 seconds")
-        setError("マップライブラリの読み込みがタイムアウトしました。ページを再読み込みしてください。")
-        setLoading(false)
-        if (onError) onError()
-      }
-    }, 120000) // 120秒でタイムアウト（延長）
-
-    return () => {
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current)
-      }
-      if (mapInitTimeoutRef.current) {
-        clearTimeout(mapInitTimeoutRef.current)
-      }
-      if (highlightTimerRef.current) {
-        clearTimeout(highlightTimerRef.current)
-      }
-    }
-  }, [onError])
-
   // Leafletが読み込まれたらマップを初期化
   useEffect(() => {
     if (!leafletLoaded || loading || mapInitialized || !mapContainerRef.current) return
@@ -247,42 +219,135 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     return () => clearTimeout(initTimer)
   }, [leafletLoaded, loading, mapInitialized, checkpoints, teamLocations])
 
-  // マップの定期的な更新とキープアライブ処理
   useEffect(() => {
-    if (!mapInitialized || !mapRef.current) return
+    if (!mapInitialized || !mapRef.current || !mapContainerRef.current) return
 
-    // マップを定期的に更新して表示を維持する
-    const keepMapAlive = () => {
-      if (mapRef.current) {
-        try {
-          // マップのサイズを再計算して表示を更新
-          mapRef.current.invalidateSize()
+    const invalidateMap = () => {
+      if (!mapRef.current) {
+        return
+      }
 
-          // 現在の中心位置を少しだけ移動して再描画を促す
-          const center = mapRef.current.getCenter()
-          if (center) {
-            const newLat = center.lat + 0.0000001
-            const newLng = center.lng + 0.0000001
-            mapRef.current.setView([newLat, newLng], mapRef.current.getZoom(), { animate: false })
-            mapRef.current.setView([center.lat, center.lng], mapRef.current.getZoom(), { animate: false })
-          }
+      requestAnimationFrame(() => {
+        mapRef.current?.invalidateSize()
+      })
+    }
 
-          console.log("Map kept alive at:", new Date().toISOString())
-        } catch (e) {
-          console.error("Error in keepMapAlive:", e)
-        }
+    const resyncVisibleMap = () => {
+      invalidateMap()
+      void refreshMapData({ includeCheckpoints: true, force: true })
+
+      if (livePosition) {
+        updateCurrentPositionMarker(livePosition.latitude, livePosition.longitude, livePosition.accuracy ?? null)
+        return
+      }
+
+      void getCurrentLocation()
+    }
+
+    const handleVisibilityChange = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        setDebugInfo((prev) => prev + "\nTab became visible, resynchronizing map")
+        resyncVisibleMap()
       }
     }
 
-    // 15秒ごとにマップを更新
-    mapUpdateIntervalRef.current = setInterval(keepMapAlive, 15000)
+    const handlePageShow = () => {
+      setDebugInfo((prev) => prev + "\nPage restored from cache, resynchronizing map")
+      resyncVisibleMap()
+    }
+
+    const handleResize = () => {
+      invalidateMap()
+    }
+
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => invalidateMap()) : null
+
+    resizeObserver?.observe(mapContainerRef.current)
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange)
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("pageshow", handlePageShow)
+      window.addEventListener("resize", handleResize)
+    }
 
     return () => {
-      if (mapUpdateIntervalRef.current) {
-        clearInterval(mapUpdateIntervalRef.current)
+      resizeObserver?.disconnect()
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange)
+      }
+      if (typeof window !== "undefined") {
+        window.removeEventListener("pageshow", handlePageShow)
+        window.removeEventListener("resize", handleResize)
       }
     }
-  }, [mapInitialized])
+  }, [mapInitialized, livePosition])
+
+  useEffect(() => {
+    if (!leafletLoaded) return
+
+    const scheduleTeamSync = () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return
+      }
+
+      if (realtimeTeamSyncTimeoutRef.current) {
+        clearTimeout(realtimeTeamSyncTimeoutRef.current)
+      }
+
+      realtimeTeamSyncTimeoutRef.current = setTimeout(() => {
+        void refreshMapData({ includeCheckpoints: false, force: true })
+      }, 250)
+    }
+
+    const scheduleCheckpointSync = () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return
+      }
+
+      if (realtimeCheckpointSyncTimeoutRef.current) {
+        clearTimeout(realtimeCheckpointSyncTimeoutRef.current)
+      }
+
+      realtimeCheckpointSyncTimeoutRef.current = setTimeout(() => {
+        void refreshMapData({ includeCheckpoints: true, force: true })
+      }, 250)
+    }
+
+    const channel = supabase
+      .channel(`team-map-live-${Date.now()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_locations" }, scheduleTeamSync)
+      .on("postgres_changes", { event: "*", schema: "public", table: "checkpoints" }, scheduleCheckpointSync)
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff" }, scheduleCheckpointSync)
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff_locations" }, scheduleCheckpointSync)
+      .subscribe((status) => {
+        setDebugInfo((prev) => prev + `\nRealtime subscription status: ${status}`)
+      })
+
+    return () => {
+      if (realtimeTeamSyncTimeoutRef.current) {
+        clearTimeout(realtimeTeamSyncTimeoutRef.current)
+      }
+      if (realtimeCheckpointSyncTimeoutRef.current) {
+        clearTimeout(realtimeCheckpointSyncTimeoutRef.current)
+      }
+      void supabase.removeChannel(channel)
+    }
+  }, [leafletLoaded])
+
+  useEffect(() => {
+    if (!livePosition) {
+      return
+    }
+
+    setPosition([livePosition.latitude, livePosition.longitude])
+    setPositionAccuracy(livePosition.accuracy ?? null)
+
+    if (mapInitialized) {
+      updateCurrentPositionMarker(livePosition.latitude, livePosition.longitude, livePosition.accuracy ?? null)
+    }
+  }, [livePosition, mapInitialized])
 
   // コンポーネントのアンマウント時にマップを破棄
   useEffect(() => {
@@ -293,20 +358,20 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
 
       // すべてのインターバルをクリア
-      if (mapUpdateIntervalRef.current) {
-        clearInterval(mapUpdateIntervalRef.current)
-      }
       if (autoUpdateIntervalRef.current) {
         clearInterval(autoUpdateIntervalRef.current)
       }
       if (countdownIntervalRef.current) {
         clearInterval(countdownIntervalRef.current)
       }
-      if (mapInitTimeoutRef.current) {
-        clearTimeout(mapInitTimeoutRef.current)
-      }
       if (highlightTimerRef.current) {
         clearTimeout(highlightTimerRef.current)
+      }
+      if (realtimeTeamSyncTimeoutRef.current) {
+        clearTimeout(realtimeTeamSyncTimeoutRef.current)
+      }
+      if (realtimeCheckpointSyncTimeoutRef.current) {
+        clearTimeout(realtimeCheckpointSyncTimeoutRef.current)
       }
     }
   }, [])
@@ -318,7 +383,9 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     }
 
     // 指定した間隔で位置情報を更新
-    autoUpdateIntervalRef.current = setInterval(refreshTeamLocations, updateInterval * 1000)
+    autoUpdateIntervalRef.current = setInterval(() => {
+      void refreshMapData({ includeCheckpoints: true, force: false })
+    }, updateInterval * 1000)
   }
 
   // 自動更新を停止
@@ -333,31 +400,147 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     }
   }
 
-  // チームの位置情報を更新する関数
-  const refreshTeamLocations = async () => {
-    if (isUpdatingLocations) return
-    if (typeof document !== "undefined" && document.hidden) return
+  const ensureCheckpointMarkerStyles = () => {
+    if (typeof document === "undefined" || document.getElementById("checkpoint-marker-style")) {
+      return
+    }
 
+    const style = document.createElement("style")
+    style.id = "checkpoint-marker-style"
+    style.innerHTML = `
+      .checkpoint-marker-shell {
+        position: relative;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .checkpoint-marker-ring {
+        position: absolute;
+        inset: 1px;
+        border-radius: 9999px;
+        background: rgba(255, 82, 82, 0.18);
+        border: 2px solid rgba(220, 38, 38, 0.45);
+      }
+      .checkpoint-marker-core {
+        width: 18px;
+        height: 18px;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #ff8a80 0%, #ef4444 55%, #b91c1c 100%);
+        border: 3px solid #ffffff;
+        box-shadow: 0 0 0 2px rgba(127, 29, 29, 0.28), 0 6px 14px rgba(127, 29, 29, 0.38);
+      }
+      .checkpoint-marker-center {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: #ffffff;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+      }
+      .checkpoint-marker-shell.is-highlighted .checkpoint-marker-ring {
+        animation: checkpoint-pulse-ring 1.8s infinite ease-out;
+      }
+      .checkpoint-marker-shell.is-highlighted .checkpoint-marker-core {
+        animation: checkpoint-pulse-core 1.2s infinite ease-in-out;
+      }
+      @keyframes checkpoint-pulse-core {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.18); }
+      }
+      @keyframes checkpoint-pulse-ring {
+        0% { transform: scale(0.85); opacity: 0.95; }
+        100% { transform: scale(1.6); opacity: 0; }
+      }
+    `
+    document.head.appendChild(style)
+  }
+
+  const createCheckpointIcon = (highlighted = false) => {
+    const L = leafletModuleRef.current
+    if (!L) {
+      throw new Error("Leaflet is not ready")
+    }
+
+    ensureCheckpointMarkerStyles()
+
+    return L.divIcon({
+      className: "checkpoint-marker",
+      html: `
+        <div class="checkpoint-marker-shell${highlighted ? " is-highlighted" : ""}">
+          <div class="checkpoint-marker-ring"></div>
+          <div class="checkpoint-marker-core"></div>
+          <div class="checkpoint-marker-center"></div>
+        </div>
+      `,
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -14],
+    })
+  }
+
+  const getCheckpointPopupContent = (checkpoint: Checkpoint) => `
+    <div style="min-width: 150px;">
+      <h3 style="font-weight: bold; margin-bottom: 5px;">${checkpoint.name}</h3>
+      ${checkpoint.description ? `<p style="margin: 5px 0;">${checkpoint.description}</p>` : ""}
+    </div>
+  `
+
+  const refreshMapData = async ({
+    includeCheckpoints = true,
+    force = false,
+  }: { includeCheckpoints?: boolean; force?: boolean } = {}) => {
+    if (syncInFlightRef.current) return
+    if (!force && typeof document !== "undefined" && document.hidden) return
+
+    syncInFlightRef.current = true
     setIsUpdatingLocations(true)
+
     try {
-      const [checkpointsData, locationsData] = await Promise.all([getCheckpoints(), getTeamLocations()])
-      setCheckpoints(checkpointsData)
+      const [locationsData, checkpointsData] = await Promise.all([
+        getTeamLocations(),
+        includeCheckpoints ? getCheckpoints() : Promise.resolve(null),
+      ])
+
       setTeamLocations(locationsData)
-      updateCheckpointMarkers(checkpointsData)
-      updateTeamMarkers(locationsData)
+
+      if (includeCheckpoints && checkpointsData) {
+        setCheckpoints(checkpointsData)
+      }
+
+      if (mapRef.current) {
+        updateTeamMarkers(locationsData)
+
+        if (includeCheckpoints && checkpointsData) {
+          updateCheckpointMarkers(checkpointsData)
+        }
+      }
+
       setLastUpdateTime(new Date().toLocaleTimeString())
-      console.log("チームの位置情報を更新しました:", new Date().toLocaleTimeString())
+      setDebugInfo(
+        (prev) =>
+          prev + `\nMap sync complete: teams=${locationsData.length}${includeCheckpoints && checkpointsData ? `, checkpoints=${checkpointsData.length}` : ""}`,
+      )
     } catch (err) {
-      console.error("Failed to update team locations:", err)
+      console.error("Failed to sync map data:", err)
+      setDebugInfo((prev) => prev + `\nMap sync failed: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
+      syncInFlightRef.current = false
       setIsUpdatingLocations(false)
       setUpdateCountdown(updateInterval)
     }
   }
 
+  const refreshTeamLocations = async () => {
+    await refreshMapData({ includeCheckpoints: true, force: true })
+  }
+
+  // チームの位置情報を更新する関数
   // マップの初期化
   const initializeMap = () => {
-    if (!window.L || !mapContainerRef.current || mapRef.current) return
+    const L = leafletModuleRef.current
+    if (!L || !mapContainerRef.current || mapRef.current) return
 
     try {
       console.log("Initializing map...")
@@ -368,13 +551,13 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       const zoom = getZoomLevel()
 
       // マップを初期化
-      mapRef.current = window.L.map(mapContainerRef.current, {
+      mapRef.current = L.map(mapContainerRef.current, {
         center: center,
         zoom: zoom,
         zoomControl: true,
         attributionControl: true,
         preferCanvas: true,
-        renderer: window.L.canvas({ padding: 0.5 }),
+        renderer: L.canvas({ padding: 0.5 }),
         wheelDebounceTime: 100,
         tap: true,
         maxBoundsViscosity: 1.0,
@@ -388,7 +571,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       setDebugInfo((prev) => prev + "\nMap object created")
 
       // タイルレイヤーを追加
-      const mainTileLayer = window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      const mainTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
         minZoom: 5,
@@ -400,7 +583,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       setDebugInfo((prev) => prev + "\nMain tile layer added")
 
       // バックアップタイルレイヤー
-      const backupTileLayer = window.L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
+      const backupTileLayer = L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 18,
         minZoom: 5,
@@ -444,16 +627,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
       // 現在位置を取得
       getCurrentLocation()
-
-      // 自動更新を開始
-      if (autoUpdate) {
-        startAutoUpdate()
-      }
-
-      // マップ初期化後のタイムアウトをクリア
-      if (mapInitTimeoutRef.current) {
-        clearTimeout(mapInitTimeoutRef.current)
-      }
     } catch (err) {
       console.error("Error initializing map:", err)
       setDebugInfo((prev) => prev + `\nError initializing map: ${err instanceof Error ? err.message : String(err)}`)
@@ -463,9 +636,12 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   // チェックポイントのマーカーを更新
   const updateCheckpointMarkers = (checkpointsData: Checkpoint[]) => {
-    if (!window.L || !mapRef.current) return
+    const L = leafletModuleRef.current
+    if (!L || !mapRef.current) return
 
     try {
+      ensureCheckpointMarkerStyles()
+
       // 既存のマーカーをクリア
       Object.values(checkpointMarkersRef.current).forEach((marker) => marker.remove())
       checkpointMarkersRef.current = {}
@@ -473,23 +649,11 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       // チェックポイントのマーカーを追加
       checkpointsData.forEach((checkpoint) => {
         try {
-          // カスタムアイコンを作成
-          const icon = window.L.divIcon({
-            className: "checkpoint-marker",
-            html: `<div style="background-color: #FF5252; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.4);"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8],
-          })
+          const icon = createCheckpointIcon()
 
-          const marker = window.L.marker([checkpoint.latitude, checkpoint.longitude], { icon })
+          const marker = L.marker([checkpoint.latitude, checkpoint.longitude], { icon })
             .addTo(mapRef.current)
-            .bindPopup(`
-            <div style="min-width: 150px;">
-              <h3 style="font-weight: bold; margin-bottom: 5px;">${checkpoint.name}</h3>
-              <p style="margin: 5px 0;">${checkpoint.description || ""}</p>
-              <p style="margin: 5px 0; font-weight: bold;">ポイント: ${checkpoint.point_value}</p>
-            </div>
-          `)
+            .bindPopup(getCheckpointPopupContent(checkpoint))
 
           checkpointMarkersRef.current[checkpoint.id] = marker
         } catch (e) {
@@ -503,7 +667,8 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   // チェックポイントを強調表示する関数
   const highlightCheckpoint = (checkpointId: number) => {
-    if (!window.L || !mapRef.current || !checkpointMarkersRef.current[checkpointId]) return
+    const L = leafletModuleRef.current
+    if (!L || !mapRef.current || !checkpointMarkersRef.current[checkpointId]) return
 
     try {
       const checkpoint = checkpoints.find((cp) => cp.id === checkpointId)
@@ -512,68 +677,15 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       // 既存のマーカーを削除
       checkpointMarkersRef.current[checkpointId].remove()
 
-      // 大きくて点滅するアイコンを作成
-      const pulsingIcon = window.L.divIcon({
-        className: "checkpoint-marker-highlighted",
-        html: `
-          <div class="pulse-ring"></div>
-          <div style="
-            background-color: #FF5252; 
-            width: 20px; 
-            height: 20px; 
-            border-radius: 50%; 
-            border: 3px solid white; 
-            box-shadow: 0 0 8px rgba(255,82,82,0.8);
-            animation: pulse 1.5s infinite;
-            z-index: 1000;
-          "></div>
-        `,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      })
-
-      // スタイルを追加
-      if (!document.getElementById("pulse-animation-style")) {
-        const style = document.createElement("style")
-        style.id = "pulse-animation-style"
-        style.innerHTML = `
-          @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          .pulse-ring {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: rgba(255, 82, 82, 0.3);
-            border: 2px solid rgba(255, 82, 82, 0.5);
-            animation: pulse-ring 2s infinite;
-            top: 0;
-            left: 0;
-          }
-          @keyframes pulse-ring {
-            0% { transform: scale(0.5); opacity: 0.8; }
-            80%, 100% { transform: scale(1.7); opacity: 0; }
-          }
-        `
-        document.head.appendChild(style)
-      }
+      const pulsingIcon = createCheckpointIcon(true)
 
       // 新しいマーカーを作成
-      const newMarker = window.L.marker([checkpoint.latitude, checkpoint.longitude], {
+      const newMarker = L.marker([checkpoint.latitude, checkpoint.longitude], {
         icon: pulsingIcon,
         zIndexOffset: 1000, // 他のマーカーより前面に表示
       })
         .addTo(mapRef.current)
-        .bindPopup(`
-          <div style="min-width: 150px;">
-            <h3 style="font-weight: bold; margin-bottom: 5px;">${checkpoint.name}</h3>
-            <p style="margin: 5px 0;">${checkpoint.description || ""}</p>
-            <p style="margin: 5px 0; font-weight: bold;">ポイント: ${checkpoint.point_value}</p>
-          </div>
-        `)
+        .bindPopup(getCheckpointPopupContent(checkpoint))
 
       // ポップアップを自動的に開く
       newMarker.openPopup()
@@ -587,7 +699,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   // チェックポイントマーカーをリセットする関数
   const resetCheckpointMarkers = () => {
-    if (!window.L || !mapRef.current) return
+    if (!leafletModuleRef.current || !mapRef.current) return
 
     try {
       // 全てのチェックポイントマーカーを通常表示に戻す
@@ -599,7 +711,8 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   // チームの位置マーカーを更新
   const updateTeamMarkers = (locations: TeamLocation[]) => {
-    if (!window.L || !mapRef.current) return
+    const L = leafletModuleRef.current
+    if (!L || !mapRef.current) return
 
     try {
       // 既存のチームラベルを削除
@@ -619,7 +732,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
             teamMarkersRef.current[team.id].setLatLng([location.latitude, location.longitude])
           } else {
             // カスタムアイコンを作成 - 小さめの丸いデザイン
-            const icon = window.L.divIcon({
+            const icon = L.divIcon({
               className: "team-marker",
               html: `
               <div style="
@@ -635,7 +748,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
               iconAnchor: [10, 10],
             })
 
-            const marker = window.L.marker([location.latitude, location.longitude], { icon })
+            const marker = L.marker([location.latitude, location.longitude], { icon })
               .addTo(mapRef.current)
               .bindPopup(`
               <div style="min-width: 150px;">
@@ -651,8 +764,8 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
           }
 
           // チーム名を表示するラベルを作成 - シンプルなラベルデザイン
-          const label = window.L.marker([location.latitude, location.longitude], {
-            icon: window.L.divIcon({
+          const label = L.marker([location.latitude, location.longitude], {
+            icon: L.divIcon({
               className: "team-label",
               html: `
               <div style="
@@ -690,6 +803,23 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   // 現在地を取得する関数
   const getCurrentLocation = () => {
+    if (livePosition) {
+      const { latitude, longitude, accuracy } = livePosition
+      setPosition([latitude, longitude])
+      setPositionAccuracy(accuracy ?? null)
+
+      if (mapRef.current) {
+        updateCurrentPositionMarker(latitude, longitude, accuracy ?? null)
+        mapRef.current.flyTo([latitude, longitude], 16, {
+          animate: true,
+          duration: 0.5,
+        })
+      }
+
+      void refreshMapData({ includeCheckpoints: true, force: true })
+      return
+    }
+
     if (typeof window === "undefined" || !navigator.geolocation) {
       alert("お使いのブラウザは位置情報をサポートしていません")
       return
@@ -698,18 +828,16 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     setLocating(true)
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords
+      (currentPosition) => {
+        const { latitude, longitude, accuracy } = currentPosition.coords
         console.log("現在位置を取得しました:", latitude, longitude)
 
         setPosition([latitude, longitude])
+        setPositionAccuracy(typeof accuracy === "number" ? accuracy : null)
 
         // 現在位置のマーカーを更新
-        if (window.L && mapRef.current) {
-          updateCurrentPositionMarker(latitude, longitude)
-
-          // マップを現在位置に移動（アニメーションを短く設定）  {
-          updateCurrentPositionMarker(latitude, longitude)
+        if (leafletModuleRef.current && mapRef.current) {
+          updateCurrentPositionMarker(latitude, longitude, typeof accuracy === "number" ? accuracy : null)
 
           // マップを現在位置に移動（アニメーションを短く設定）
           mapRef.current.flyTo([latitude, longitude], 16, {
@@ -719,7 +847,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
         }
 
         // 他のチームの位置情報も更新
-        refreshTeamLocations()
+        void refreshMapData({ includeCheckpoints: true, force: true })
 
         setLocating(false)
       },
@@ -735,23 +863,27 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0,
+        maximumAge: 5000,
       },
     )
   }
 
   // 現在位置のマーカーを更新
-  const updateCurrentPositionMarker = (latitude: number, longitude: number) => {
-    if (!window.L || !mapRef.current) return
+  const updateCurrentPositionMarker = (latitude: number, longitude: number, accuracy: number | null = null) => {
+    const L = leafletModuleRef.current
+    if (!L || !mapRef.current) return
 
     // 既存のマーカーを削除
     if (currentPositionMarkerRef.current) {
       currentPositionMarkerRef.current.remove()
     }
+    if (currentPositionCircleRef.current) {
+      currentPositionCircleRef.current.remove()
+    }
 
     try {
       // 現在位置のマーカーを作成 - シンプルなデザインに
-      const icon = window.L.divIcon({
+      const icon = L.divIcon({
         className: "current-position-marker",
         html: `
         <div style="
@@ -767,13 +899,15 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
         iconAnchor: [9, 9],
       })
 
-      currentPositionMarkerRef.current = window.L.marker([latitude, longitude], { icon })
+      currentPositionMarkerRef.current = L.marker([latitude, longitude], { icon })
         .addTo(mapRef.current)
-        .bindPopup("<div><strong>現在地</strong></div>")
+        .bindPopup(
+          `<div><strong>現在地</strong>${typeof accuracy === "number" ? `<div style="margin-top: 4px; font-size: 12px;">精度: ±${Math.round(accuracy)}m</div>` : ""}</div>`,
+        )
 
       // 精度を示す円を追加
-      window.L.circle([latitude, longitude], {
-        radius: 30, // 半径（メートル）
+      currentPositionCircleRef.current = L.circle([latitude, longitude], {
+        radius: Math.max(accuracy ?? 30, 10),
         color: "#4285F4",
         fillColor: "#4285F4",
         fillOpacity: 0.1,
@@ -1108,11 +1242,4 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       )}
     </div>
   )
-}
-
-// グローバル型定義
-declare global {
-  interface Window {
-    L: any
-  }
 }
