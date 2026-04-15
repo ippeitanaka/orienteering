@@ -150,12 +150,25 @@ export default function CheckpointCheckinPanel({
               </Alert>
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={() => void handleCheckin()} disabled={loading || checkedIn} size="lg" className="gap-2">
-                <Sparkles className="h-4 w-4" />
-                {checkedIn ? "チェックイン済み" : loading ? "チェックイン中..." : `${pointValue}ポイントでチェックイン`}
+            <div className="rounded-3xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 p-5 shadow-lg shadow-amber-100/80">
+              <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-amber-900">ここを押してチェックイン</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-700">
+                ページ内容を確認したら、下の大きなボタンを押してください。押した後は合計ポイントが増えているか確認してください。
+              </p>
+              <Button
+                onClick={() => void handleCheckin()}
+                disabled={loading || checkedIn}
+                size="lg"
+                className={`mt-4 h-auto min-h-20 w-full gap-3 rounded-2xl px-6 py-5 text-xl font-black tracking-[0.02em] text-white shadow-xl transition-transform duration-200 ${
+                  checkedIn
+                    ? "bg-emerald-600 shadow-emerald-200/80 hover:bg-emerald-600"
+                    : "animate-pulse bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 shadow-orange-200/80 hover:scale-[1.01] hover:from-amber-400 hover:via-orange-500 hover:to-rose-500"
+                } disabled:animate-none disabled:opacity-100`}
+              >
+                <Sparkles className="h-6 w-6" />
+                {checkedIn ? "チェックイン済み" : loading ? "チェックイン中..." : `${pointValue}ポイントを獲得してチェックイン`}
               </Button>
-              <p className="text-sm text-zinc-500">1 チームにつきこのチェックポイントでの加算は 1 回のみです。</p>
+              <p className="mt-3 text-sm text-zinc-600">1 チームにつきこのチェックポイントでの加算は 1 回のみです。</p>
             </div>
           </>
         )}

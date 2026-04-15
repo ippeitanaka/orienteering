@@ -36,23 +36,11 @@ const checkpointPosterPdfOffsetYmm = (checkpointPosterPrintSize.heightMm - check
 
 const buildCheckpointQrIdentifier = (checkpoint: Checkpoint) => checkpoint.qr_token || String(checkpoint.id)
 
-const resolveCheckpointNameFontSize = (name: string) => {
-  const length = name.trim().length
-
-  if (length <= 8) return 58
-  if (length <= 12) return 52
-  if (length <= 16) return 46
-  if (length <= 22) return 40
-  if (length <= 30) return 34
-  return 30
-}
-
 export default function CheckpointQrSheet({ checkpoint, onRegenerate }: CheckpointQrSheetProps) {
   const posterRef = useRef<HTMLDivElement>(null)
   const [origin, setOrigin] = useState("")
   const [isExporting, setIsExporting] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
-  const checkpointPosterDisplayName = "TMC"
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -67,8 +55,6 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
 
     return `${origin}/checkpoint/${buildCheckpointQrIdentifier(checkpoint)}`
   }, [checkpoint, origin])
-
-  const checkpointNameFontSize = useMemo(() => resolveCheckpointNameFontSize(checkpointPosterDisplayName), [checkpointPosterDisplayName])
 
   const buildPosterImageDataUrl = async () => {
     if (!posterRef.current || typeof document === "undefined") {
@@ -321,29 +307,11 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   flexDirection: "column",
                 }}
               >
-                <p style={{ margin: 0, fontSize: "14px", letterSpacing: "0.18em", color: "#78716c", textTransform: "uppercase" }}>
-                  Checkpoint Name
-                </p>
-                <h2
-                  style={{
-                    margin: "12px 0 16px",
-                    fontSize: `${checkpointNameFontSize}px`,
-                    lineHeight: 1.05,
-                    fontWeight: 700,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    letterSpacing: checkpointNameFontSize <= 34 ? "-0.04em" : "normal",
-                  }}
-                >
-                  {checkpointPosterDisplayName}
-                </h2>
-
                 <div
                   style={{
                     display: "flex",
                     gap: "16px",
-                    marginBottom: "18px",
+                    marginBottom: "16px",
                   }}
                 >
                   <div style={{ flex: 1, padding: "16px 18px", borderRadius: "20px", background: "rgba(15, 118, 110, 0.1)" }}>
@@ -366,6 +334,18 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#44403c" }}>案内</p>
                   <p style={{ margin: "10px 0 0", fontSize: "18px", lineHeight: 1.8, color: "#292524" }}>
                     {checkpoint.description || "このチェックポイント用の QR コードです。印刷して設置し、参加チームが迷わず見つけられるようにしてください。"}
+                  </p>
+                  <p
+                    style={{
+                      margin: "18px 0 0",
+                      paddingTop: "16px",
+                      borderTop: "1px solid rgba(120, 113, 108, 0.16)",
+                      fontSize: "15px",
+                      lineHeight: 1.8,
+                      color: "#44403c",
+                    }}
+                  >
+                    チームアカウントにログインしたスマートフォンで読み取ると、このチェックポイント専用ページが開きます。内容を確認してチェックインボタンを押してください。その後ポイントが追加されているか確認してください。
                   </p>
                 </div>
               </section>
@@ -400,9 +380,6 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   >
                     {qrUrl ? <QRCodeSVG value={qrUrl} size={240} includeMargin bgColor="#ffffff" fgColor="#111111" /> : null}
                   </div>
-                  <p style={{ margin: 0, textAlign: "center", fontSize: "15px", lineHeight: 1.7, color: "#44403c" }}>
-                    スマートフォンで読み取ると、このチェックポイント専用ページが開きます。
-                  </p>
                 </div>
 
                 <div
