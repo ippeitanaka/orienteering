@@ -24,6 +24,7 @@ export interface Checkpoint {
   id: number
   created_at: string
   name: string
+  qr_token?: string | null
   description: string | null
   latitude: number
   longitude: number
@@ -35,7 +36,6 @@ export interface Checkpoint {
   base_latitude?: number
   base_longitude?: number
   last_location_update?: string | null
-  qr_token?: string | null
 }
 
 export interface Team {
@@ -54,7 +54,6 @@ export interface TeamLocation {
   latitude: number
   longitude: number
   timestamp: string
-  accuracy?: number | null
 }
 
 export interface StaffMember {
@@ -127,14 +126,12 @@ export async function getCheckpoints(): Promise<Checkpoint[]> {
 }
 
 export async function getTeamLocations(): Promise<TeamLocation[]> {
-  const response = await fetch("/api/team-locations", { cache: "no-store" })
-  const result = await response.json()
-
-  if (!response.ok) {
-    throw new Error(result.error || "Failed to fetch team locations")
+  const { data, error } = await supabase.from("team_locations").select("*")
+  if (error) {
+    console.error("Error fetching team locations:", error)
+    throw error
   }
-
-  return result.data || []
+  return data || []
 }
 
 export async function updateStaffLocation(staffId: number, latitude: number, longitude: number): Promise<any> {
@@ -160,7 +157,6 @@ export async function updateTeamLocation(
   latitude: number,
   longitude: number,
   deviceId?: string,
-  accuracy?: number | null,
 ): Promise<any> {
   try {
     const response = await fetch("/api/team-location", {
@@ -168,7 +164,7 @@ export async function updateTeamLocation(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ teamId, latitude, longitude, deviceId, accuracy }),
+      body: JSON.stringify({ teamId, latitude, longitude, deviceId }),
     })
 
     const data = await response.json()

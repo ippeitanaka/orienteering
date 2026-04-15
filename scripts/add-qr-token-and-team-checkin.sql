@@ -48,15 +48,19 @@ BEGIN
     VALUES (p_team_id, p_checkpoint_id);
   EXCEPTION
     WHEN unique_violation THEN
-      SELECT COALESCE(total_score, 0) INTO v_total_score FROM public.teams WHERE id = p_team_id;
+      SELECT COALESCE(t.total_score, 0)
+      INTO v_total_score
+      FROM public.teams AS t
+      WHERE t.id = p_team_id;
+
       RETURN QUERY SELECT FALSE, TRUE, 0, v_total_score, v_checkpoint_name;
       RETURN;
   END;
 
-  UPDATE public.teams
-  SET total_score = COALESCE(total_score, 0) + v_awarded_points
-  WHERE id = p_team_id
-  RETURNING total_score INTO v_total_score;
+  UPDATE public.teams AS t
+  SET total_score = COALESCE(t.total_score, 0) + v_awarded_points
+  WHERE t.id = p_team_id
+  RETURNING t.total_score INTO v_total_score;
 
   RETURN QUERY SELECT TRUE, FALSE, v_awarded_points, v_total_score, v_checkpoint_name;
 END;

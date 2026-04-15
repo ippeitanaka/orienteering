@@ -14,7 +14,21 @@ interface CheckpointQrSheetProps {
   onRegenerate?: (checkpoint: Checkpoint) => Promise<void> | void
 }
 
+const checkpointPosterFontFamily = 'var(--font-biz-ud-gothic), "BIZ UDGothic", "BIZ UDPGothic", "Hiragino Sans", sans-serif'
+const checkpointPosterPrintFontHref = "https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap"
+
 const buildCheckpointQrIdentifier = (checkpoint: Checkpoint) => checkpoint.qr_token || String(checkpoint.id)
+
+const resolveCheckpointNameFontSize = (name: string) => {
+  const length = name.trim().length
+
+  if (length <= 8) return 58
+  if (length <= 12) return 52
+  if (length <= 16) return 46
+  if (length <= 22) return 40
+  if (length <= 30) return 34
+  return 30
+}
 
 export default function CheckpointQrSheet({ checkpoint, onRegenerate }: CheckpointQrSheetProps) {
   const posterRef = useRef<HTMLDivElement>(null)
@@ -36,6 +50,8 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
     return `${origin}/checkpoint/${buildCheckpointQrIdentifier(checkpoint)}`
   }, [checkpoint, origin])
 
+  const checkpointNameFontSize = useMemo(() => resolveCheckpointNameFontSize(checkpoint.name), [checkpoint.name])
+
   const handlePrint = () => {
     if (!posterRef.current || typeof window === "undefined") {
       return
@@ -52,12 +68,16 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
         <head>
           <title>${checkpoint.name} | QRポスター</title>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+          <link href="${checkpointPosterPrintFontHref}" rel="stylesheet" />
           <style>
             @page { size: A4 portrait; margin: 0; }
             html, body {
               margin: 0;
               padding: 0;
               background: #f4f0e8;
+              font-family: ${checkpointPosterFontFamily};
             }
             body {
               display: flex;
@@ -146,7 +166,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
             margin: "0 auto",
             background: "linear-gradient(180deg, #f9f4ea 0%, #f5efe3 44%, #efe4d2 100%)",
             color: "#171717",
-            fontFamily: '"BIZ UDGothic", "Hiragino Sans", sans-serif',
+            fontFamily: checkpointPosterFontFamily,
             position: "relative",
             overflow: "hidden",
             boxShadow: "0 30px 80px rgba(64, 44, 17, 0.18)",
@@ -231,21 +251,29 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                 <p style={{ margin: 0, fontSize: "14px", letterSpacing: "0.18em", color: "#78716c", textTransform: "uppercase" }}>
                   Checkpoint Name
                 </p>
-                <h2 style={{ margin: "14px 0 18px", fontSize: "58px", lineHeight: 1.05, fontWeight: 700 }}>{checkpoint.name}</h2>
+                <h2
+                  style={{
+                    margin: "14px 0 18px",
+                    fontSize: `${checkpointNameFontSize}px`,
+                    lineHeight: 1.05,
+                    fontWeight: 700,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    letterSpacing: checkpointNameFontSize <= 34 ? "-0.04em" : "normal",
+                  }}
+                >
+                  {checkpoint.name}
+                </h2>
 
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    display: "flex",
                     gap: "16px",
                     marginBottom: "24px",
                   }}
                 >
-                  <div style={{ padding: "16px 18px", borderRadius: "20px", background: "rgba(245, 158, 11, 0.1)" }}>
-                    <p style={{ margin: 0, fontSize: "12px", color: "#92400e", letterSpacing: "0.14em", textTransform: "uppercase" }}>Point Value</p>
-                    <p style={{ margin: "8px 0 0", fontSize: "36px", fontWeight: 700 }}>{checkpoint.point_value} pt</p>
-                  </div>
-                  <div style={{ padding: "16px 18px", borderRadius: "20px", background: "rgba(15, 118, 110, 0.1)" }}>
+                  <div style={{ flex: 1, padding: "16px 18px", borderRadius: "20px", background: "rgba(15, 118, 110, 0.1)" }}>
                     <p style={{ margin: 0, fontSize: "12px", color: "#115e59", letterSpacing: "0.14em", textTransform: "uppercase" }}>Checkpoint ID</p>
                     <p style={{ margin: "8px 0 0", fontSize: "36px", fontWeight: 700 }}>#{checkpoint.id}</p>
                   </div>

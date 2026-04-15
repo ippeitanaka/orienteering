@@ -19,8 +19,7 @@ CREATE TABLE IF NOT EXISTS checkpoints (
   description TEXT,
   latitude DOUBLE PRECISION NOT NULL,
   longitude DOUBLE PRECISION NOT NULL,
-  point_value INTEGER DEFAULT 10,
-  qr_token TEXT UNIQUE
+  point_value INTEGER DEFAULT 10
 );
 
 -- 3. Checkins table (チェックイン記録)
@@ -39,7 +38,6 @@ CREATE TABLE IF NOT EXISTS team_locations (
   team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
   latitude DOUBLE PRECISION NOT NULL,
   longitude DOUBLE PRECISION NOT NULL,
-  accuracy DOUBLE PRECISION,
   timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -85,60 +83,10 @@ CREATE TABLE IF NOT EXISTS staff_locations (
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_checkins_team_id ON checkins(team_id);
 CREATE INDEX IF NOT EXISTS idx_checkins_checkpoint_id ON checkins(checkpoint_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_checkins_unique_team_checkpoint ON checkins(team_id, checkpoint_id);
 CREATE INDEX IF NOT EXISTS idx_team_locations_team_id ON team_locations(team_id);
 CREATE INDEX IF NOT EXISTS idx_team_location_locks_last_seen ON team_location_locks(last_seen);
 CREATE INDEX IF NOT EXISTS idx_staff_checkpoint_id ON staff(checkpoint_id);
 CREATE INDEX IF NOT EXISTS idx_staff_locations_staff_id ON staff_locations(staff_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_checkpoints_qr_token ON checkpoints(qr_token) WHERE qr_token IS NOT NULL;
-
-CREATE OR REPLACE FUNCTION public.team_checkpoint_checkin(p_team_id INTEGER, p_checkpoint_id INTEGER)
-RETURNS TABLE(
-  success BOOLEAN,
-  already_checked_in BOOLEAN,
-  awarded_points INTEGER,
-  total_score INTEGER,
-  checkpoint_name TEXT
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  v_awarded_points INTEGER := 0;
-  v_total_score INTEGER := 0;
-  v_checkpoint_name TEXT := NULL;
-BEGIN
-  SELECT
-    CASE
-      WHEN point_value::text ~ '^-?[0-9]+$' THEN (point_value::text)::INTEGER
-      ELSE 0
-    END,
-    name
-  INTO v_awarded_points, v_checkpoint_name
-  FROM checkpoints
-  WHERE id = p_checkpoint_id;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Checkpoint not found';
-  END IF;
-
-  BEGIN
-    INSERT INTO checkins (team_id, checkpoint_id)
-    VALUES (p_team_id, p_checkpoint_id);
-  EXCEPTION
-    WHEN unique_violation THEN
-      SELECT COALESCE(total_score, 0) INTO v_total_score FROM teams WHERE id = p_team_id;
-      RETURN QUERY SELECT FALSE, TRUE, 0, v_total_score, v_checkpoint_name;
-      RETURN;
-  END;
-
-  UPDATE teams
-  SET total_score = COALESCE(total_score, 0) + v_awarded_points
-  WHERE id = p_team_id
-  RETURNING total_score INTO v_total_score;
-
-  RETURN QUERY SELECT TRUE, FALSE, v_awarded_points, v_total_score, v_checkpoint_name;
-END;
-$$;
 
 -- Enable Row Level Security (RLS) - optional, can be customized later
 -- ALTER TABLE teams ENABLE ROW LEVEL SECURITY;

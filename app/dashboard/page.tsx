@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { getCheckpoints, getTeams, type Checkpoint, type Team } from "@/lib/supabase"
 import TeamSelector from "@/components/team-selector"
-import LocationTracker, { type LocationPositionSnapshot } from "@/components/location-tracker"
+import LocationTracker from "@/components/location-tracker"
 import { Crosshair, Home, HelpCircle, Map, MapPin, Sparkles, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -43,7 +43,6 @@ export default function Dashboard() {
   const [mapLoadTimeout, setMapLoadTimeout] = useState<NodeJS.Timeout | null>(null)
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
   const [activeArrivalCheckpoint, setActiveArrivalCheckpoint] = useState<Checkpoint | null>(null)
-  const [currentPosition, setCurrentPosition] = useState<LocationPositionSnapshot | null>(null)
   const arrivalTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const celebratedCheckpointIdsRef = useRef<Set<number>>(new Set())
 
@@ -92,7 +91,6 @@ export default function Dashboard() {
     if (!selectedTeam) {
       celebratedCheckpointIdsRef.current.clear()
       setActiveArrivalCheckpoint(null)
-      setCurrentPosition(null)
     }
   }, [selectedTeam])
 
@@ -135,9 +133,13 @@ export default function Dashboard() {
     setMapKey((prev) => prev + 1)
   }
 
-  const handlePositionChange = ({ latitude, longitude, accuracy }: LocationPositionSnapshot) => {
-    setCurrentPosition({ latitude, longitude, accuracy })
+  // 位置情報が更新されたときにマップを更新
+  const handleLocationUpdate = () => {
+    // マップを強制的に再レンダリング
+    setMapKey((prev) => prev + 1)
+  }
 
+  const handlePositionChange = ({ latitude, longitude }: { latitude: number; longitude: number }) => {
     if (!checkpoints.length) {
       return
     }
@@ -153,13 +155,7 @@ export default function Dashboard() {
       }
     }
 
-    const arrivalThreshold = Math.max(40, Math.ceil(accuracy ?? 0))
-
-    if (
-      !nearestCheckpoint ||
-      nearestDistance > arrivalThreshold ||
-      celebratedCheckpointIdsRef.current.has(nearestCheckpoint.id)
-    ) {
+    if (!nearestCheckpoint || nearestDistance > 40 || celebratedCheckpointIdsRef.current.has(nearestCheckpoint.id)) {
       return
     }
 
@@ -326,6 +322,7 @@ export default function Dashboard() {
                           <div className="flex items-center gap-2">
                             <Crosshair className="h-4 w-4" />
                             <span className="font-semibold">{activeArrivalCheckpoint.name}</span>
+                            <span className="text-sm text-emerald-800">+{activeArrivalCheckpoint.point_value}pt</span>
                           </div>
                           <p className="mt-1 text-sm">
                             {activeArrivalCheckpoint.assigned_staff_name
@@ -343,12 +340,11 @@ export default function Dashboard() {
                       <BasicMap
                         key={`map-attempt-${mapLoadAttempts}-update-${mapKey}`}
                         teams={teams}
-                        livePosition={currentPosition}
                         onError={handleMapLoadError}
                       />
                     )}
                     <div className="mt-4">
-                      <LocationTracker onPositionChange={handlePositionChange} />
+                      <LocationTracker onLocationUpdate={handleLocationUpdate} onPositionChange={handlePositionChange} />
                     </div>
                     {activeArrivalCheckpoint ? (
                       <div className="mt-3 rounded-lg bg-emerald-950/90 px-4 py-3 text-sm text-emerald-50 shadow-lg">

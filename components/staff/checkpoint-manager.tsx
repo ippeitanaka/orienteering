@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { AlertCircle, Edit, Trash, Plus, RefreshCw, QrCode } from "lucide-react"
+import { AlertCircle, Edit, Trash, Plus, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import CheckpointForm from "@/components/staff/checkpoint-form"
-import CheckpointQrSheet from "@/components/staff/checkpoint-qr-sheet"
 import { getCheckpoints, type Checkpoint } from "@/lib/supabase"
 
 export default function CheckpointManager() {
@@ -18,9 +17,7 @@ export default function CheckpointManager() {
   const [error, setError] = useState<string | null>(null)
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [currentCheckpoint, setCurrentCheckpoint] = useState<Checkpoint | null>(null)
-  const [currentQrCheckpoint, setCurrentQrCheckpoint] = useState<Checkpoint | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
@@ -57,11 +54,6 @@ export default function CheckpointManager() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleOpenQrDialog = (checkpoint: Checkpoint) => {
-    setCurrentQrCheckpoint(checkpoint)
-    setIsQrDialogOpen(true)
-  }
-
   const confirmDeleteCheckpoint = async () => {
     if (!currentCheckpoint) return
 
@@ -84,41 +76,8 @@ export default function CheckpointManager() {
   }
 
   const handleFormSuccess = (checkpoint: Checkpoint) => {
-    const createdNewCheckpoint = !currentCheckpoint
     setIsFormDialogOpen(false)
-
-    if (createdNewCheckpoint) {
-      setCurrentQrCheckpoint(checkpoint)
-      setIsQrDialogOpen(true)
-    } else if (currentQrCheckpoint?.id === checkpoint.id) {
-      setCurrentQrCheckpoint(checkpoint)
-    }
-
     setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
-  }
-
-  const handleRegenerateQr = async (checkpoint: Checkpoint) => {
-    try {
-      const response = await fetch(`/api/checkpoints/${checkpoint.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ regenerate_qr: true }),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "QRコードの再生成に失敗しました")
-      }
-
-      setCurrentQrCheckpoint(result.data)
-      setRefreshTrigger((prev) => prev + 1)
-    } catch (err) {
-      console.error("Failed to regenerate QR token:", err)
-      setError(err instanceof Error ? err.message : "QRコードの再生成中にエラーが発生しました")
-    }
   }
 
   return (
@@ -198,14 +157,6 @@ export default function CheckpointManager() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleOpenQrDialog(checkpoint)}
-                            title="QRポスター"
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
                             onClick={() => handleEditCheckpoint(checkpoint)}
                             title="編集"
                           >
@@ -240,17 +191,6 @@ export default function CheckpointManager() {
               onSuccess={handleFormSuccess}
               onCancel={() => setIsFormDialogOpen(false)}
             />
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
-            <DialogHeader>
-              <DialogTitle>チェックポイントQRポスター</DialogTitle>
-            </DialogHeader>
-            {currentQrCheckpoint ? (
-              <CheckpointQrSheet checkpoint={currentQrCheckpoint} onRegenerate={handleRegenerateQr} />
-            ) : null}
           </DialogContent>
         </Dialog>
 

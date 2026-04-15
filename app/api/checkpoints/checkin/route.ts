@@ -33,6 +33,16 @@ const isMissingRpcFunction = (error: { code?: string; message?: string } | null)
   )
 }
 
+const shouldFallbackFromRpcError = (error: { code?: string; details?: string | null; message?: string } | null) => {
+  if (!error) return false
+  if (isMissingRpcFunction(error)) return true
+
+  const details = typeof error.details === "string" ? error.details.toLowerCase() : ""
+  const message = typeof error.message === "string" ? error.message.toLowerCase() : ""
+
+  return error.code === "42702" && (details.includes("total_score") || message.includes('"total_score" is ambiguous'))
+}
+
 const resolveCheckpointByToken = async (token: string) => {
   if (!supabaseServer) {
     return { data: null, error: new Error("Database connection not available") }
@@ -147,7 +157,7 @@ export async function POST(request: Request) {
       })
     }
 
-    if (rpcResult.error && !isMissingRpcFunction(rpcResult.error)) {
+    if (rpcResult.error && !shouldFallbackFromRpcError(rpcResult.error)) {
       console.error("RPC team_checkpoint_checkin failed:", rpcResult.error)
       return NextResponse.json({ error: "チェックイン処理に失敗しました" }, { status: 500 })
     }

@@ -14,20 +14,6 @@ const normalizePointValue = (value: unknown) => {
   return 0
 }
 
-const generateQrToken = () => `cp_${crypto.randomUUID().replace(/-/g, "")}`
-
-const isQrTokenColumnMissing = (error: { code?: string; message?: string } | null) => {
-  if (!error) {
-    return false
-  }
-
-  return (
-    error.code === "42703" ||
-    error.code === "PGRST204" ||
-    (typeof error.message === "string" && error.message.toLowerCase().includes("qr_token"))
-  )
-}
-
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     if (!supabaseServer) {
@@ -133,7 +119,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const body = await request.json()
 
     // 更新可能なフィールドを制限
-    const { name, description, latitude, longitude, point_value, assigned_staff_id, regenerate_qr } = body
+    const { name, description, latitude, longitude, point_value, assigned_staff_id } = body
     const updateData: Record<string, any> = {}
 
     if (name !== undefined) updateData.name = name
@@ -141,7 +127,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (latitude !== undefined) updateData.latitude = latitude
     if (longitude !== undefined) updateData.longitude = longitude
     if (point_value !== undefined) updateData.point_value = String(point_value) // 文字列に変換
-    if (regenerate_qr) updateData.qr_token = generateQrToken()
 
     // データが空の場合はエラー
     if (Object.keys(updateData).length === 0) {
@@ -150,21 +135,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     console.log("Updating checkpoint with data:", updateData)
 
-    let { data, error } = await supabaseServer.from("checkpoints").update(updateData).eq("id", checkpointId).select()
-
-    if (error && isQrTokenColumnMissing(error)) {
-      delete updateData.qr_token
-
-      if (Object.keys(updateData).length === 0) {
-        const fallbackResult = await supabaseServer.from("checkpoints").select("*").eq("id", checkpointId).limit(1)
-        data = fallbackResult.data
-        error = fallbackResult.error
-      } else {
-        const fallbackResult = await supabaseServer.from("checkpoints").update(updateData).eq("id", checkpointId).select()
-        data = fallbackResult.data
-        error = fallbackResult.error
-      }
-    }
+    const { data, error } = await supabaseServer.from("checkpoints").update(updateData).eq("id", checkpointId).select()
 
     if (error) {
       console.error("Error updating checkpoint:", error)

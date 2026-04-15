@@ -12,15 +12,9 @@ import { Label } from "@/components/ui/label"
 // 位置情報更新イベントのカスタムイベント
 export const LOCATION_UPDATED_EVENT = "locationUpdated"
 
-export interface LocationPositionSnapshot {
-  latitude: number
-  longitude: number
-  accuracy: number | null
-}
-
 interface LocationTrackerProps {
   onLocationUpdate?: () => void // 位置情報更新時のコールバック
-  onPositionChange?: (position: LocationPositionSnapshot) => void
+  onPositionChange?: (position: { latitude: number; longitude: number }) => void
 }
 
 export default function LocationTracker({ onLocationUpdate, onPositionChange }: LocationTrackerProps) {
@@ -28,7 +22,7 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
   const [teamId, setTeamId] = useState<number | null>(null)
   const [status, setStatus] = useState<string>("位置情報を取得中...")
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null)
-  const [lastPosition, setLastPosition] = useState<LocationPositionSnapshot | null>(null)
+  const [lastPosition, setLastPosition] = useState<{ latitude: number; longitude: number } | null>(null)
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null)
   const [isTracking, setIsTracking] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -40,12 +34,6 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
   const [updateCountdown, setUpdateCountdown] = useState(updateInterval)
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const [deviceId, setDeviceId] = useState<string | null>(null)
-
-  const geolocationOptions: PositionOptions = {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 5000,
-  }
 
   useEffect(() => {
     setIsMounted(true)
@@ -76,6 +64,7 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
         navigator.permissions.query({ name: "geolocation" }).then((result) => {
           if (result.state === "granted") {
             setPermissionGranted(true)
+            startTracking()
           } else if (result.state === "prompt") {
             requestPermission()
           } else {
@@ -87,6 +76,7 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
           result.addEventListener("change", () => {
             if (result.state === "granted") {
               setPermissionGranted(true)
+              startTracking()
             } else {
               setPermissionGranted(false)
               stopTracking()
@@ -106,64 +96,6 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
       }
     }
   }, [])
-
-  useEffect(() => {
-    if (permissionGranted && teamId) {
-      startTracking()
-      return
-    }
-
-    if (permissionGranted === false || !teamId) {
-      stopTracking()
-    }
-  }, [permissionGranted, teamId])
-
-  useEffect(() => {
-    const resumeTracking = () => {
-      if (!permissionGranted || !teamId) {
-        return
-      }
-
-      if (watchIdRef.current === null) {
-        startTracking()
-        return
-      }
-
-      updateLocation()
-    }
-
-    const handleVisibilityChange = () => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        resumeTracking()
-      }
-    }
-
-    const handlePageShow = () => {
-      resumeTracking()
-    }
-
-    const handleOnline = () => {
-      resumeTracking()
-    }
-
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", handleVisibilityChange)
-    }
-    if (typeof window !== "undefined") {
-      window.addEventListener("pageshow", handlePageShow)
-      window.addEventListener("online", handleOnline)
-    }
-
-    return () => {
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityChange)
-      }
-      if (typeof window !== "undefined") {
-        window.removeEventListener("pageshow", handlePageShow)
-        window.removeEventListener("online", handleOnline)
-      }
-    }
-  }, [permissionGranted, teamId])
 
   // 自動更新の状態が変わったときの処理
   useEffect(() => {
@@ -218,7 +150,7 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
         setPermissionGranted(false)
         setStatus("位置情報へのアクセスが拒否されています。設定から許可してください。")
       },
-      geolocationOptions,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     )
   }
 
@@ -234,17 +166,13 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
     if (watchIdRef.current === null) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         (position) => {
-          const snapshot = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: typeof position.coords.accuracy === "number" ? position.coords.accuracy : null,
-          }
-          updateTeamLocationOnServer(snapshot)
+          const { latitude, longitude } = position.coords
+          updateTeamLocationOnServer(latitude, longitude)
         },
         (error) => {
           console.error("位置情報の監視中にエラーが発生しました:", error)
         },
-        geolocationOptions,
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       )
     }
 
@@ -289,37 +217,33 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        updateTeamLocationOnServer({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: typeof position.coords.accuracy === "number" ? position.coords.accuracy : null,
-        })
+        const { latitude, longitude } = position.coords
+        updateTeamLocationOnServer(latitude, longitude)
       },
       (error) => {
         console.error("位置情報の取得に失敗しました:", error)
         setStatus(`位置情報の取得に失敗しました: ${getGeolocationErrorMessage(error)}`)
       },
-      geolocationOptions,
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     )
   }
 
-  const updateTeamLocationOnServer = async ({ latitude, longitude, accuracy }: LocationPositionSnapshot) => {
+  const updateTeamLocationOnServer = async (latitude: number, longitude: number) => {
     if (!teamId || !deviceId) return
     setIsUpdating(true)
 
     try {
-      await updateTeamLocation(teamId, latitude, longitude, deviceId, accuracy)
+      await updateTeamLocation(teamId, latitude, longitude, deviceId)
       const now = new Date().toLocaleTimeString()
-      setStatus(`最終更新: ${now}${typeof accuracy === "number" ? ` / 精度 ±${Math.round(accuracy)}m` : ""}`)
+      setStatus(`最終更新: ${now}`)
       setLastUpdateTime(now)
-      const snapshot = { latitude, longitude, accuracy }
-      setLastPosition(snapshot)
-      onPositionChange?.(snapshot)
+      setLastPosition({ latitude, longitude })
+      onPositionChange?.({ latitude, longitude })
       console.log("位置情報を更新しました:", latitude, longitude)
 
       // 位置情報更新イベントを発火
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent(LOCATION_UPDATED_EVENT, { detail: snapshot }))
+        window.dispatchEvent(new CustomEvent(LOCATION_UPDATED_EVENT))
       }
 
       // コールバックがあれば実行
@@ -400,14 +324,9 @@ export default function LocationTracker({ onLocationUpdate, onPositionChange }: 
         <div>
           <p className="font-medium">{status}</p>
           {lastPosition && (
-            <>
-              <p className="text-xs text-muted-foreground mt-1">
-                位置: {lastPosition.latitude.toFixed(6)}, {lastPosition.longitude.toFixed(6)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                位置精度: {typeof lastPosition.accuracy === "number" ? `±${Math.round(lastPosition.accuracy)}m` : "取得中"}
-              </p>
-            </>
+            <p className="text-xs text-muted-foreground mt-1">
+              位置: {lastPosition.latitude.toFixed(6)}, {lastPosition.longitude.toFixed(6)}
+            </p>
           )}
         </div>
         <Button variant="outline" size="sm" className="rounded-full" onClick={handleManualUpdate} disabled={isUpdating}>
