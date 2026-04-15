@@ -16,7 +16,7 @@ interface CheckpointQrSheetProps {
 
 const checkpointPosterFontFamily = 'var(--font-biz-ud-gothic), "BIZ UDGothic", "BIZ UDPGothic", "Hiragino Sans", sans-serif'
 const checkpointPosterWidthPx = 794
-const checkpointPosterHeightPx = 1123
+const checkpointPosterHeightPx = 920
 const checkpointPosterPrintSize = {
   widthMm: 297,
   heightMm: 420,
@@ -52,6 +52,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
   const [origin, setOrigin] = useState("")
   const [isExporting, setIsExporting] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const checkpointPosterDisplayName = "TMC"
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -67,7 +68,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
     return `${origin}/checkpoint/${buildCheckpointQrIdentifier(checkpoint)}`
   }, [checkpoint, origin])
 
-  const checkpointNameFontSize = useMemo(() => resolveCheckpointNameFontSize(checkpoint.name), [checkpoint.name])
+  const checkpointNameFontSize = useMemo(() => resolveCheckpointNameFontSize(checkpointPosterDisplayName), [checkpointPosterDisplayName])
 
   const buildPosterImageDataUrl = async () => {
     if (!posterRef.current || typeof document === "undefined") {
@@ -243,7 +244,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
 
           <div
             style={{
-              padding: "56px 56px 40px",
+              padding: "44px 48px 32px",
               position: "relative",
               zIndex: 1,
               height: "100%",
@@ -257,8 +258,8 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: "24px",
-                marginBottom: "38px",
+                gap: "20px",
+                marginBottom: "28px",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
@@ -281,7 +282,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   <p style={{ margin: 0, fontSize: "14px", letterSpacing: "0.2em", color: "#7a5a26", textTransform: "uppercase" }}>
                     ELT Orienteering
                   </p>
-                  <h1 style={{ margin: "8px 0 0", fontSize: "40px", lineHeight: 1.2, fontWeight: 700 }}>Checkpoint QR Poster</h1>
+                  <h1 style={{ margin: "8px 0 0", fontSize: "38px", lineHeight: 1.2, fontWeight: 700 }}>Checkpoint QR Code</h1>
                 </div>
               </div>
 
@@ -304,7 +305,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
               style={{
                 display: "grid",
                 gridTemplateColumns: "1.2fr 0.95fr",
-                gap: "28px",
+                gap: "24px",
                 alignItems: "stretch",
                 flex: 1,
               }}
@@ -314,7 +315,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   background: "rgba(255,255,255,0.62)",
                   border: "1px solid rgba(120, 113, 108, 0.16)",
                   borderRadius: "32px",
-                  padding: "32px",
+                  padding: "28px",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
                   display: "flex",
                   flexDirection: "column",
@@ -325,7 +326,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                 </p>
                 <h2
                   style={{
-                    margin: "14px 0 18px",
+                    margin: "12px 0 16px",
                     fontSize: `${checkpointNameFontSize}px`,
                     lineHeight: 1.05,
                     fontWeight: 700,
@@ -335,14 +336,14 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                     letterSpacing: checkpointNameFontSize <= 34 ? "-0.04em" : "normal",
                   }}
                 >
-                  {checkpoint.name}
+                  {checkpointPosterDisplayName}
                 </h2>
 
                 <div
                   style={{
                     display: "flex",
                     gap: "16px",
-                    marginBottom: "24px",
+                    marginBottom: "18px",
                   }}
                 >
                   <div style={{ flex: 1, padding: "16px 18px", borderRadius: "20px", background: "rgba(15, 118, 110, 0.1)" }}>
@@ -353,26 +354,19 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
 
                 <div
                   style={{
-                    minHeight: "250px",
+                    minHeight: "180px",
                     flex: 1,
                     borderRadius: "28px",
-                    padding: "24px",
+                    padding: "20px 22px",
+                    maxWidth: "420px",
                     background: "linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.64))",
                     border: "1px solid rgba(148, 163, 184, 0.18)",
                   }}
                 >
                   <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "#44403c" }}>案内</p>
-                  <p style={{ margin: "12px 0 0", fontSize: "18px", lineHeight: 1.8, color: "#292524" }}>
+                  <p style={{ margin: "10px 0 0", fontSize: "18px", lineHeight: 1.8, color: "#292524" }}>
                     {checkpoint.description || "このチェックポイント用の QR コードです。印刷して設置し、参加チームが迷わず見つけられるようにしてください。"}
                   </p>
-                  <div style={{ marginTop: "28px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                    <div style={{ padding: "10px 14px", borderRadius: "999px", background: "#111827", color: "#fff", fontSize: "13px", fontWeight: 700 }}>
-                      1ページ印刷対応
-                    </div>
-                    <div style={{ padding: "10px 14px", borderRadius: "999px", background: "rgba(2,132,199,0.12)", color: "#0c4a6e", fontSize: "13px", fontWeight: 700 }}>
-                      PDFダウンロード対応
-                    </div>
-                  </div>
                 </div>
               </section>
 
@@ -380,7 +374,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                 style={{
                   background: "#ffffff",
                   borderRadius: "36px",
-                  padding: "28px",
+                  padding: "24px",
                   border: "1px solid rgba(120, 113, 108, 0.16)",
                   boxShadow: "0 20px 44px rgba(120, 113, 108, 0.12)",
                   display: "flex",
@@ -394,17 +388,17 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   </p>
                   <div
                     style={{
-                      margin: "20px auto 16px",
+                      margin: "16px auto 14px",
                       width: "100%",
                       borderRadius: "28px",
-                      padding: "22px",
+                      padding: "18px",
                       background: "linear-gradient(180deg, #fafaf9 0%, #f5f5f4 100%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    {qrUrl ? <QRCodeSVG value={qrUrl} size={270} includeMargin bgColor="#ffffff" fgColor="#111111" /> : null}
+                    {qrUrl ? <QRCodeSVG value={qrUrl} size={240} includeMargin bgColor="#ffffff" fgColor="#111111" /> : null}
                   </div>
                   <p style={{ margin: 0, textAlign: "center", fontSize: "15px", lineHeight: 1.7, color: "#44403c" }}>
                     スマートフォンで読み取ると、このチェックポイント専用ページが開きます。
@@ -413,8 +407,8 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
 
                 <div
                   style={{
-                    marginTop: "20px",
-                    padding: "18px",
+                    marginTop: "16px",
+                    padding: "16px",
                     borderRadius: "22px",
                     background: "#1c1917",
                     color: "#fafaf9",
@@ -428,28 +422,6 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
               </section>
             </div>
 
-            <footer
-              style={{
-                marginTop: "28px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "24px",
-                padding: "24px 28px",
-                background: "rgba(255,255,255,0.52)",
-                borderRadius: "28px",
-                border: "1px solid rgba(120, 113, 108, 0.12)",
-              }}
-            >
-              <div>
-                <p style={{ margin: 0, fontSize: "13px", color: "#57534e" }}>東洋医療専門学校 救急救命士学科</p>
-                <p style={{ margin: "6px 0 0", fontSize: "24px", fontWeight: 700 }}>学外オリエンテーション</p>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ margin: 0, fontSize: "12px", letterSpacing: "0.14em", textTransform: "uppercase", color: "#78716c" }}>QR Identifier</p>
-                <p style={{ margin: "8px 0 0", fontSize: "18px", fontWeight: 700 }}>{buildCheckpointQrIdentifier(checkpoint)}</p>
-              </div>
-            </footer>
           </div>
         </div>
       </div>
