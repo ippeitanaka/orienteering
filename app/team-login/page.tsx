@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Hash } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function TeamLoginPage() {
+function TeamLoginContent() {
   const [teamCode, setTeamCode] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -146,5 +146,13 @@ export default function TeamLoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TeamLoginPage() {
+  return (
+    <Suspense fallback={<div className="elt-bg min-h-screen" />}>
+      <TeamLoginContent />
+    </Suspense>
   )
 }
