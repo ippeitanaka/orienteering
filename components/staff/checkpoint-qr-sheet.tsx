@@ -16,6 +16,8 @@ interface CheckpointQrSheetProps {
 
 const checkpointPosterFontFamily = 'var(--font-biz-ud-gothic), "BIZ UDGothic", "BIZ UDPGothic", "Hiragino Sans", sans-serif'
 const checkpointPosterPrintFontHref = "https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap"
+const checkpointPosterWidthPx = 794
+const checkpointPosterHeightPx = 1123
 
 const buildCheckpointQrIdentifier = (checkpoint: Checkpoint) => checkpoint.qr_token || String(checkpoint.id)
 
@@ -76,16 +78,32 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
             html, body {
               margin: 0;
               padding: 0;
+              width: 210mm;
+              height: 297mm;
               background: #f4f0e8;
               font-family: ${checkpointPosterFontFamily};
             }
             body {
               display: flex;
               justify-content: center;
-              align-items: flex-start;
+              align-items: stretch;
               padding: 0;
+              overflow: hidden;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
+            }
+            [data-checkpoint-poster="true"] {
+              width: 210mm !important;
+              min-height: 297mm !important;
+              height: 297mm !important;
+              margin: 0 !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+            }
+            [data-checkpoint-poster="true"] * {
+              box-sizing: border-box;
             }
           </style>
         </head>
@@ -160,15 +178,18 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
       <div className="overflow-auto rounded-2xl border border-border/60 bg-stone-100 p-4">
         <div
           ref={posterRef}
+          data-checkpoint-poster="true"
           style={{
-            width: "794px",
-            minHeight: "1123px",
+            width: `${checkpointPosterWidthPx}px`,
+            minHeight: `${checkpointPosterHeightPx}px`,
+            height: `${checkpointPosterHeightPx}px`,
             margin: "0 auto",
             background: "linear-gradient(180deg, #f9f4ea 0%, #f5efe3 44%, #efe4d2 100%)",
             color: "#171717",
             fontFamily: checkpointPosterFontFamily,
             position: "relative",
             overflow: "hidden",
+            boxSizing: "border-box",
             boxShadow: "0 30px 80px rgba(64, 44, 17, 0.18)",
           }}
         >
