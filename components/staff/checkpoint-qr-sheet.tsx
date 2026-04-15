@@ -23,6 +23,17 @@ const checkpointPosterPrintSize = {
   safeMarginMm: 8,
 }
 
+const printablePosterWidthMm = checkpointPosterPrintSize.widthMm - checkpointPosterPrintSize.safeMarginMm * 2
+const printablePosterHeightMm = checkpointPosterPrintSize.heightMm - checkpointPosterPrintSize.safeMarginMm * 2
+const checkpointPosterScale = Math.min(
+  printablePosterWidthMm / checkpointPosterWidthPx,
+  printablePosterHeightMm / checkpointPosterHeightPx,
+)
+const checkpointPosterPdfWidthMm = checkpointPosterWidthPx * checkpointPosterScale
+const checkpointPosterPdfHeightMm = checkpointPosterHeightPx * checkpointPosterScale
+const checkpointPosterPdfOffsetXmm = (checkpointPosterPrintSize.widthMm - checkpointPosterPdfWidthMm) / 2
+const checkpointPosterPdfOffsetYmm = (checkpointPosterPrintSize.heightMm - checkpointPosterPdfHeightMm) / 2
+
 const buildCheckpointQrIdentifier = (checkpoint: Checkpoint) => checkpoint.qr_token || String(checkpoint.id)
 
 const resolveCheckpointNameFontSize = (name: string) => {
@@ -57,9 +68,6 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
   }, [checkpoint, origin])
 
   const checkpointNameFontSize = useMemo(() => resolveCheckpointNameFontSize(checkpoint.name), [checkpoint.name])
-  const printablePosterWidthMm = checkpointPosterPrintSize.widthMm - checkpointPosterPrintSize.safeMarginMm * 2
-  const printablePosterHeightMm =
-    (printablePosterWidthMm / checkpointPosterWidthPx) * checkpointPosterHeightPx
 
   const buildPosterImageDataUrl = async () => {
     if (!posterRef.current || typeof document === "undefined") {
@@ -123,10 +131,10 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
     pdf.addImage(
       dataUrl,
       "PNG",
-      checkpointPosterPrintSize.safeMarginMm,
-      checkpointPosterPrintSize.safeMarginMm,
-      printablePosterWidthMm,
-      printablePosterHeightMm,
+      checkpointPosterPdfOffsetXmm,
+      checkpointPosterPdfOffsetYmm,
+      checkpointPosterPdfWidthMm,
+      checkpointPosterPdfHeightMm,
     )
 
     return pdf
@@ -233,7 +241,17 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
             }}
           />
 
-          <div style={{ padding: "56px 56px 40px", position: "relative", zIndex: 1 }}>
+          <div
+            style={{
+              padding: "56px 56px 40px",
+              position: "relative",
+              zIndex: 1,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              boxSizing: "border-box",
+            }}
+          >
             <div
               style={{
                 display: "flex",
@@ -288,6 +306,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                 gridTemplateColumns: "1.2fr 0.95fr",
                 gap: "28px",
                 alignItems: "stretch",
+                flex: 1,
               }}
             >
               <section
@@ -297,6 +316,8 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                   borderRadius: "32px",
                   padding: "32px",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 <p style={{ margin: 0, fontSize: "14px", letterSpacing: "0.18em", color: "#78716c", textTransform: "uppercase" }}>
@@ -333,6 +354,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
                 <div
                   style={{
                     minHeight: "250px",
+                    flex: 1,
                     borderRadius: "28px",
                     padding: "24px",
                     background: "linear-gradient(135deg, rgba(255,255,255,0.88), rgba(255,255,255,0.64))",
