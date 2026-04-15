@@ -15,7 +15,6 @@ interface CheckpointQrSheetProps {
 }
 
 const checkpointPosterFontFamily = 'var(--font-biz-ud-gothic), "BIZ UDGothic", "BIZ UDPGothic", "Hiragino Sans", sans-serif'
-const checkpointPosterPrintFontHref = "https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap"
 const checkpointPosterWidthPx = 794
 const checkpointPosterHeightPx = 1123
 const checkpointPosterPrintSize = {
@@ -62,89 +61,58 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
   const printablePosterHeightMm =
     (printablePosterWidthMm / checkpointPosterWidthPx) * checkpointPosterHeightPx
 
-  const handlePrint = () => {
-    if (!posterRef.current || typeof window === "undefined") {
-      return
+  const buildPosterPdf = async () => {
+    if (!posterRef.current) {
+      return null
     }
 
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=920,height=1280")
-    if (!printWindow) {
-      return
-    }
+    const dataUrl = await toPng(posterRef.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+      backgroundColor: "#f4f0e8",
+    })
 
-    const posterMarkup = posterRef.current.outerHTML
-    printWindow.document.write(`
-      <html lang="ja">
-        <head>
-          <title>${checkpoint.name} | QRポスター</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-          <link href="${checkpointPosterPrintFontHref}" rel="stylesheet" />
-          <style>
-            @page { size: A3 portrait; margin: ${checkpointPosterPrintSize.safeMarginMm}mm; }
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 100%;
-              height: 100%;
-              background: #f4f0e8;
-              font-family: ${checkpointPosterFontFamily};
-            }
-            body {
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              padding: 0;
-              overflow: visible;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            [data-checkpoint-poster="true"] {
-              width: ${printablePosterWidthMm}mm !important;
-              min-height: ${printablePosterHeightMm}mm !important;
-              height: ${printablePosterHeightMm}mm !important;
-              margin: 0 !important;
-              box-shadow: none !important;
-              border-radius: 0 !important;
-              overflow: hidden !important;
-              box-sizing: border-box !important;
-            }
-            [data-checkpoint-poster="true"] * {
-              box-sizing: border-box;
-            }
-          </style>
-        </head>
-        <body>${posterMarkup}</body>
-      </html>
-    `)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a3" })
+    pdf.addImage(
+      dataUrl,
+      "PNG",
+      checkpointPosterPrintSize.safeMarginMm,
+      checkpointPosterPrintSize.safeMarginMm,
+      printablePosterWidthMm,
+      printablePosterHeightMm,
+    )
+
+    return pdf
   }
 
-  const handleDownloadPdf = async () => {
-    if (!posterRef.current) {
+  const handlePrint = async () => {
+    if (typeof window === "undefined") {
       return
     }
 
     setIsExporting(true)
     try {
-      const dataUrl = await toPng(posterRef.current, {
-        cacheBust: true,
-        pixelRatio: 2,
-        backgroundColor: "#f4f0e8",
-      })
+      const pdf = await buildPosterPdf()
+      if (!pdf) {
+        return
+      }
 
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a3" })
-      pdf.addImage(
-        dataUrl,
-        "PNG",
-        checkpointPosterPrintSize.safeMarginMm,
-        checkpointPosterPrintSize.safeMarginMm,
-        printablePosterWidthMm,
-        printablePosterHeightMm,
-      )
+      pdf.autoPrint()
+      const blobUrl = pdf.output("bloburl")
+      window.open(blobUrl, "_blank", "noopener,noreferrer")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDownloadPdf = async () => {
+    setIsExporting(true)
+    try {
+      const pdf = await buildPosterPdf()
+      if (!pdf) {
+        return
+      }
+
       pdf.save(`${checkpoint.name}-qr-poster.pdf`)
     } finally {
       setIsExporting(false)
@@ -176,7 +144,7 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
       <div className="flex flex-wrap gap-2">
         <Button onClick={handlePrint} className="gap-2">
           <Printer className="h-4 w-4" />
-          A3印刷
+          {isExporting ? "PDF準備中..." : "A3印刷"}
         </Button>
         <Button variant="outline" onClick={() => void handleDownloadPdf()} disabled={isExporting} className="gap-2">
           <Download className="h-4 w-4" />
