@@ -61,16 +61,63 @@ export default function CheckpointQrSheet({ checkpoint, onRegenerate }: Checkpoi
   const printablePosterHeightMm =
     (printablePosterWidthMm / checkpointPosterWidthPx) * checkpointPosterHeightPx
 
-  const buildPosterPdf = async () => {
-    if (!posterRef.current) {
+  const buildPosterImageDataUrl = async () => {
+    if (!posterRef.current || typeof document === "undefined") {
       return null
     }
 
-    const dataUrl = await toPng(posterRef.current, {
-      cacheBust: true,
-      pixelRatio: 2,
-      backgroundColor: "#f4f0e8",
-    })
+    const sandbox = document.createElement("div")
+    sandbox.style.position = "fixed"
+    sandbox.style.left = "-10000px"
+    sandbox.style.top = "0"
+    sandbox.style.width = `${checkpointPosterWidthPx}px`
+    sandbox.style.height = `${checkpointPosterHeightPx}px`
+    sandbox.style.padding = "0"
+    sandbox.style.margin = "0"
+    sandbox.style.overflow = "visible"
+    sandbox.style.pointerEvents = "none"
+    sandbox.style.opacity = "1"
+    sandbox.style.background = "#f4f0e8"
+    sandbox.style.zIndex = "-1"
+
+    const posterClone = posterRef.current.cloneNode(true) as HTMLDivElement
+    posterClone.style.margin = "0"
+    posterClone.style.boxShadow = "none"
+    posterClone.style.transform = "none"
+    posterClone.style.width = `${checkpointPosterWidthPx}px`
+    posterClone.style.minHeight = `${checkpointPosterHeightPx}px`
+    posterClone.style.height = `${checkpointPosterHeightPx}px`
+
+    sandbox.appendChild(posterClone)
+    document.body.appendChild(sandbox)
+
+    try {
+      if (document.fonts?.ready) {
+        await document.fonts.ready
+      }
+
+      await new Promise((resolve) => window.requestAnimationFrame(() => resolve(undefined)))
+
+      return await toPng(posterClone, {
+        cacheBust: true,
+        backgroundColor: "#f4f0e8",
+        width: checkpointPosterWidthPx,
+        height: checkpointPosterHeightPx,
+        canvasWidth: checkpointPosterWidthPx * 2,
+        canvasHeight: checkpointPosterHeightPx * 2,
+        pixelRatio: 1,
+        skipAutoScale: true,
+      })
+    } finally {
+      sandbox.remove()
+    }
+  }
+
+  const buildPosterPdf = async () => {
+    const dataUrl = await buildPosterImageDataUrl()
+    if (!dataUrl) {
+      return null
+    }
 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a3" })
     pdf.addImage(
