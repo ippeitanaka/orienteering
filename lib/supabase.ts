@@ -88,6 +88,48 @@ export interface EventReportTeamRow {
   lastCheckinAt: string | null
 }
 
+export interface EventReportCheckinHistoryItem {
+  id: number
+  timestamp: string
+  checkpointId: number
+  checkpointName: string
+  pointValue: number
+}
+
+export interface EventReportLocationHistoryItem {
+  id: number
+  timestamp: string
+  latitude: number
+  longitude: number
+  distanceFromPreviousMeters: number
+}
+
+export interface EventReportTimelineItem {
+  id: string
+  timestamp: string
+  type: "checkin" | "location"
+  title: string
+  description: string
+}
+
+export interface EventReportTeamDetail {
+  teamId: number
+  teamName: string
+  teamColor: string
+  score: number
+  totalCheckins: number
+  totalLocationLogs: number
+  estimatedDistanceMeters: number
+  firstCheckinAt: string | null
+  lastCheckinAt: string | null
+  firstLocationAt: string | null
+  lastLocationAt: string | null
+  visitedCheckpointNames: string[]
+  checkinHistory: EventReportCheckinHistoryItem[]
+  locationHistory: EventReportLocationHistoryItem[]
+  timeline: EventReportTimelineItem[]
+}
+
 export interface EventReportCheckpointRow {
   checkpointId: number
   checkpointName: string
@@ -102,6 +144,7 @@ export interface EventReport {
   summary: EventReportSummary
   teams: EventReportTeamRow[]
   checkpoints: EventReportCheckpointRow[]
+  teamDetails: EventReportTeamDetail[]
 }
 
 // 既存の型定義に追加
@@ -112,6 +155,14 @@ export interface TimerSettings {
   is_running: boolean
   created_at: string
   updated_at: string
+}
+
+export interface GameResetTargets {
+  scores: boolean
+  checkins: boolean
+  teamLocations: boolean
+  movingCheckpoints: boolean
+  timer: boolean
 }
 
 export async function getCheckpoints(options?: { activeOnly?: boolean }): Promise<Checkpoint[]> {
@@ -475,4 +526,28 @@ export async function getEventReport(): Promise<EventReport> {
   }
 
   return result.data
+}
+
+export async function resetGameData(targets: GameResetTargets): Promise<{ success: boolean; message: string }> {
+  const response = await fetch("/api/reset-game", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ targets }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok || !result.success) {
+    return {
+      success: false,
+      message: result.error || "ゲームデータのリセットに失敗しました",
+    }
+  }
+
+  return {
+    success: true,
+    message: result.message || "ゲームデータをリセットしました",
+  }
 }
