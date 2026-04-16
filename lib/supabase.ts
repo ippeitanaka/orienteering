@@ -25,6 +25,7 @@ export interface Checkpoint {
   created_at: string
   name: string
   description: string | null
+  qr_token?: string | null
   latitude: number
   longitude: number
   point_value: number
