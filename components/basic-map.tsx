@@ -302,10 +302,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       clearInterval(autoUpdateIntervalRef.current)
       autoUpdateIntervalRef.current = null
     }
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current)
-      countdownIntervalRef.current = null
-    }
   }
 
   // チームの位置情報を更新する関数

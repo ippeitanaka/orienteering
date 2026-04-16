@@ -9,6 +9,14 @@ const DEFAULT_SETTINGS = {
   team_map_refresh_interval_seconds: 180,
 }
 
+const isTeamMapSettingsTableMissing = (error: { code?: string; message?: string } | null | undefined) =>
+  Boolean(
+    error &&
+      (error.code === "42P01" ||
+        error.code === "PGRST205" ||
+        (typeof error.message === "string" && error.message.includes("team_map_settings"))),
+  )
+
 async function isStaffAuthenticated() {
   const cookieStore = await cookies()
   const staffSession = cookieStore.get("staff_session")
@@ -36,11 +44,13 @@ async function ensureTeamMapSettingsTable() {
 
   const { error: tableCheckError } = await supabaseServer.from("team_map_settings").select("id").limit(1)
 
-  if (tableCheckError && tableCheckError.code !== "42P01") {
+  const tableMissing = isTeamMapSettingsTableMissing(tableCheckError)
+
+  if (tableCheckError && !tableMissing) {
     return { error: tableCheckError }
   }
 
-  if (tableCheckError?.code === "42P01") {
+  if (tableMissing) {
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS team_map_settings (
         id INTEGER PRIMARY KEY,
@@ -67,6 +77,8 @@ async function ensureTeamMapSettingsTable() {
     if (createError) {
       return { error: createError }
     }
+
+    return { data: { id: 1, ...DEFAULT_SETTINGS }, schemaCachePending: true }
   }
 
   const { data, error } = await supabaseServer.from("team_map_settings").select("*").eq("id", 1).maybeSingle()
@@ -102,7 +114,7 @@ export async function GET() {
 
     if (result.error) {
       console.error("Failed to fetch team map settings:", result.error)
-      return NextResponse.json({ error: result.error.message || "Failed to fetch team map settings" }, { status: 500 })
+      return NextResponse.json({ data: DEFAULT_SETTINGS, fallback: true })
     }
 
     return NextResponse.json({
@@ -152,6 +164,41 @@ export async function PUT(request: Request) {
         { error: "更新間隔は30秒から600秒の範囲で設定してください", success: false },
         { status: 400 },
       )
+    }
+
+    if (ensured.schemaCachePending) {
+      const upsertSql = `
+        INSERT INTO team_map_settings (
+          id,
+          team_location_auto_update_enabled,
+          team_location_update_interval_seconds,
+          team_map_auto_refresh_enabled,
+          team_map_refresh_interval_seconds,
+          updated_at
+        ) VALUES (
+          1,
+          ${nextSettings.team_location_auto_update_enabled},
+          ${nextSettings.team_location_update_interval_seconds},
+          ${nextSettings.team_map_auto_refresh_enabled},
+          ${nextSettings.team_map_refresh_interval_seconds},
+          '${nextSettings.updated_at}'
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          team_location_auto_update_enabled = EXCLUDED.team_location_auto_update_enabled,
+          team_location_update_interval_seconds = EXCLUDED.team_location_update_interval_seconds,
+          team_map_auto_refresh_enabled = EXCLUDED.team_map_auto_refresh_enabled,
+          team_map_refresh_interval_seconds = EXCLUDED.team_map_refresh_interval_seconds,
+          updated_at = EXCLUDED.updated_at;
+      `
+
+      const { error: rawUpsertError } = await supabaseServer.rpc("exec_sql", { sql: upsertSql })
+
+      if (rawUpsertError) {
+        console.error("Failed to update team map settings via exec_sql:", rawUpsertError)
+        return NextResponse.json({ error: rawUpsertError.message, success: false }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true, data: nextSettings })
     }
 
     const { data, error } = await supabaseServer
