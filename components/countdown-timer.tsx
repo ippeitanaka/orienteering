@@ -10,20 +10,28 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface CountdownTimerProps {
   isStaff?: boolean
+  refreshSignal?: number
 }
 
-export default function CountdownTimer({ isStaff = false }: CountdownTimerProps) {
+export default function CountdownTimer({ isStaff = false, refreshSignal = 0 }: CountdownTimerProps) {
   const [timerSettings, setTimerSettings] = useState<TimerSettings | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
 
   // タイマー設定を取得
   useEffect(() => {
-    async function fetchTimerSettings() {
+    let isCancelled = false
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null
+    let pollInterval: ReturnType<typeof setInterval> | null = null
+
+    async function fetchTimerSettings(attempt = 0) {
       try {
         const settings = await getTimerSettings()
+        if (isCancelled) {
+          return
+        }
+
         setTimerSettings(settings)
         setLoading(false)
         setError(null)
@@ -31,25 +39,29 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
         console.error("Error fetching timer settings:", err)
 
         // 最大3回までリトライ
-        if (retryCount < 3) {
-          console.log(`Retrying timer settings fetch (${retryCount + 1}/3)...`)
-          setRetryCount((prev) => prev + 1)
-          setTimeout(fetchTimerSettings, 2000) // 2秒後にリトライ
+        if (attempt < 3) {
+          console.log(`Retrying timer settings fetch (${attempt + 1}/3)...`)
+          retryTimeout = setTimeout(() => {
+            void fetchTimerSettings(attempt + 1)
+          }, 2000)
         } else {
           setError("タイマー設定の取得に失敗しました")
           setLoading(false)
 
           // エラー時のフォールバック設定
           setTimerSettings({
+            id: 0,
+            created_at: "",
             duration: 3600,
             end_time: null,
             is_running: false,
+            updated_at: "",
           })
         }
       }
     }
 
-    fetchTimerSettings()
+    void fetchTimerSettings()
 
     // リアルタイム更新のサブスクリプションを設定
     let subscription: any = null
@@ -60,7 +72,7 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
         .on("postgres_changes", { event: "*", schema: "public", table: "timer_settings" }, (payload) => {
           console.log("Timer settings changed:", payload)
           // 変更があった場合は設定を更新
-          fetchTimerSettings()
+          void fetchTimerSettings()
         })
         .subscribe((status) => {
           console.log("Subscription status:", status)
@@ -69,7 +81,19 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
       console.error("Error setting up subscription:", err)
     }
 
+    // Realtime が効かない環境向けのフォールバック
+    pollInterval = setInterval(() => {
+      void fetchTimerSettings()
+    }, 5000)
+
     return () => {
+      isCancelled = true
+      if (retryTimeout) {
+        clearTimeout(retryTimeout)
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval)
+      }
       if (subscription) {
         try {
           subscription.unsubscribe()
@@ -78,7 +102,7 @@ export default function CountdownTimer({ isStaff = false }: CountdownTimerProps)
         }
       }
     }
-  }, [retryCount])
+  }, [refreshSignal])
 
   // タイマーのカウントダウン処理
   useEffect(() => {

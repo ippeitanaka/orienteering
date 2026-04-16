@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Locate, MapPin, Users, RefreshCw } from "lucide-react"
 import { getCheckpoints, getTeamLocations, getTeamMapSettings, type Checkpoint, type Team, type TeamLocation } from "@/lib/supabase"
+import { ensureCheckpointMarkerStyles, getCheckpointMarkerIconConfig } from "@/lib/checkpoint-marker"
 import { LOCATION_UPDATED_EVENT } from "./location-tracker"
 import { useToast } from "@/hooks/use-toast"
 
@@ -438,20 +439,18 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     if (!window.L || !mapRef.current) return
 
     try {
+      ensureCheckpointMarkerStyles()
+
       // 既存のマーカーをクリア
       Object.values(checkpointMarkersRef.current).forEach((marker) => marker.remove())
       checkpointMarkersRef.current = {}
 
       // チェックポイントのマーカーを追加
-      checkpointsData.forEach((checkpoint) => {
+      checkpointsData
+        .filter((checkpoint) => checkpoint.is_checkpoint !== false)
+        .forEach((checkpoint) => {
         try {
-          // カスタムアイコンを作成
-          const icon = window.L.divIcon({
-            className: "checkpoint-marker",
-            html: `<div style="background-color: #FF5252; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 3px rgba(0,0,0,0.4);"></div>`,
-            iconSize: [16, 16],
-            iconAnchor: [8, 8],
-          })
+          const icon = window.L.divIcon(getCheckpointMarkerIconConfig(checkpoint))
 
           const marker = window.L.marker([checkpoint.latitude, checkpoint.longitude], { icon })
             .addTo(mapRef.current)
@@ -478,60 +477,15 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
     if (!window.L || !mapRef.current || !checkpointMarkersRef.current[checkpointId]) return
 
     try {
+      ensureCheckpointMarkerStyles()
+
       const checkpoint = checkpoints.find((cp) => cp.id === checkpointId)
       if (!checkpoint) return
 
       // 既存のマーカーを削除
       checkpointMarkersRef.current[checkpointId].remove()
 
-      // 大きくて点滅するアイコンを作成
-      const pulsingIcon = window.L.divIcon({
-        className: "checkpoint-marker-highlighted",
-        html: `
-          <div class="pulse-ring"></div>
-          <div style="
-            background-color: #FF5252; 
-            width: 20px; 
-            height: 20px; 
-            border-radius: 50%; 
-            border: 3px solid white; 
-            box-shadow: 0 0 8px rgba(255,82,82,0.8);
-            animation: pulse 1.5s infinite;
-            z-index: 1000;
-          "></div>
-        `,
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
-      })
-
-      // スタイルを追加
-      if (!document.getElementById("pulse-animation-style")) {
-        const style = document.createElement("style")
-        style.id = "pulse-animation-style"
-        style.innerHTML = `
-          @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-          }
-          .pulse-ring {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: rgba(255, 82, 82, 0.3);
-            border: 2px solid rgba(255, 82, 82, 0.5);
-            animation: pulse-ring 2s infinite;
-            top: 0;
-            left: 0;
-          }
-          @keyframes pulse-ring {
-            0% { transform: scale(0.5); opacity: 0.8; }
-            80%, 100% { transform: scale(1.7); opacity: 0; }
-          }
-        `
-        document.head.appendChild(style)
-      }
+      const pulsingIcon = window.L.divIcon(getCheckpointMarkerIconConfig(checkpoint, true))
 
       // 新しいマーカーを作成
       const newMarker = window.L.marker([checkpoint.latitude, checkpoint.longitude], {

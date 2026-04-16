@@ -19,6 +19,7 @@ export default function TimerControl() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [refreshSignal, setRefreshSignal] = useState(0)
 
   useEffect(() => {
     fetchTimerSettings()
@@ -84,7 +85,8 @@ export default function TimerControl() {
 
       if (result) {
         setSuccess("タイマーを開始しました")
-        fetchTimerSettings()
+        setRefreshSignal((prev) => prev + 1)
+        await fetchTimerSettings()
       } else {
         setError("タイマーの開始に失敗しました")
       }
@@ -107,7 +109,8 @@ export default function TimerControl() {
 
       if (result) {
         setSuccess("タイマーを停止しました")
-        fetchTimerSettings()
+        setRefreshSignal((prev) => prev + 1)
+        await fetchTimerSettings()
       } else {
         setError("タイマーの停止に失敗しました")
       }
@@ -121,7 +124,7 @@ export default function TimerControl() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <CountdownTimer isStaff={true} />
+      <CountdownTimer isStaff={true} refreshSignal={refreshSignal} />
 
       <Card>
         <CardHeader className="p-3 sm:p-4">

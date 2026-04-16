@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Locate } from "lucide-react"
 import Script from "next/script"
+import { ensureCheckpointMarkerStyles, getCheckpointMarkerIconConfig } from "@/lib/checkpoint-marker"
 
 interface OSMMapViewProps {
   teams: Team[]
@@ -128,6 +129,8 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
     if (!window.L || !mapRef.current) return
 
     try {
+      ensureCheckpointMarkerStyles()
+
       // 既存のマーカーをクリア
       markersRef.current.forEach((marker) => {
         if (mapRef.current) marker.remove()
@@ -135,8 +138,12 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
       markersRef.current = []
 
       // チェックポイントのマーカーを追加
-      checkpoints.forEach((checkpoint) => {
-        const marker = window.L.marker([checkpoint.latitude, checkpoint.longitude])
+      checkpoints
+        .filter((checkpoint) => checkpoint.is_checkpoint !== false)
+        .forEach((checkpoint) => {
+        const marker = window.L.marker([checkpoint.latitude, checkpoint.longitude], {
+          icon: window.L.divIcon(getCheckpointMarkerIconConfig(checkpoint)),
+        })
           .addTo(mapRef.current)
           .bindPopup(`
             <div>

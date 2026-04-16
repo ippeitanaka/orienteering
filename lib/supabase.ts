@@ -390,116 +390,36 @@ export async function updateCheckpoint(
 }
 
 export async function getTimerSettings(): Promise<TimerSettings | null> {
-  try {
-    const { data, error } = await supabase
-      .from("timer_settings")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(1)
+  const response = await fetch("/api/timer", { cache: "no-store" })
+  const result = await response.json()
 
-    if (error) {
-      console.error("Error fetching timer settings:", error)
-      throw error
-    }
-
-    return data?.[0] || null
-  } catch (error) {
-    console.error("Error fetching timer settings:", error)
-    throw error
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch timer settings")
   }
+
+  return result.data || null
 }
 
 export async function startTimer(duration: number): Promise<boolean> {
-  try {
-    const endTime = new Date(Date.now() + duration * 1000).toISOString()
+  const response = await fetch("/api/timer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ duration }),
+  })
 
-    // 既存のタイマー設定を取得
-    const { data: existingTimer, error: fetchError } = await supabase
-      .from("timer_settings")
-      .select("id")
-      .order("created_at", { ascending: false })
-      .limit(1)
-
-    if (fetchError) {
-      console.error("Error fetching timer settings:", fetchError)
-      return false
-    }
-
-    let result
-
-    if (existingTimer && existingTimer.length > 0) {
-      // 既存の設定を更新
-      result = await supabase
-        .from("timer_settings")
-        .update({
-          duration,
-          end_time: endTime,
-          is_running: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", existingTimer[0].id)
-    } else {
-      // 新しい設定を作成
-      result = await supabase.from("timer_settings").insert([
-        {
-          duration,
-          end_time: endTime,
-          is_running: true,
-        },
-      ])
-    }
-
-    if (result.error) {
-      console.error("Error starting timer:", result.error)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error("Error starting timer:", error)
-    return false
-  }
+  const result = await response.json()
+  return response.ok && result.success === true
 }
 
 export async function stopTimer(): Promise<boolean> {
-  try {
-    // 既存のタイマー設定を取得
-    const { data: existingTimer, error: fetchError } = await supabase
-      .from("timer_settings")
-      .select("id")
-      .order("created_at", { ascending: false })
-      .limit(1)
+  const response = await fetch("/api/timer", {
+    method: "DELETE",
+  })
 
-    if (fetchError) {
-      console.error("Error fetching timer settings:", fetchError)
-      return false
-    }
-
-    if (!existingTimer || existingTimer.length === 0) {
-      console.warn("No timer settings found to stop")
-      return true // タイマーがない場合でも成功とみなす
-    }
-
-    // タイマーを停止
-    const { error } = await supabase
-      .from("timer_settings")
-      .update({
-        is_running: false,
-        end_time: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existingTimer[0].id)
-
-    if (error) {
-      console.error("Error stopping timer:", error)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error("Error stopping timer:", error)
-    return false
-  }
+  const result = await response.json()
+  return response.ok && result.success === true
 }
 
 export async function addPointsToTeam(teamId: number, points: number): Promise<{ success: boolean; message: string }> {
