@@ -14,6 +14,7 @@ import CheckpointManager from "@/components/staff/checkpoint-manager"
 import EventReport from "@/components/staff/event-report"
 import GameResetPanel from "@/components/staff/game-reset-panel"
 import StaffLocationTracker from "@/components/staff/staff-location-tracker"
+import TeamMapSettingsPanel from "@/components/staff/team-map-settings-panel"
 import TeamManager from "@/components/staff/team-manager"
 import { getTeams, type Team } from "@/lib/supabase"
 
@@ -188,6 +189,9 @@ export default function StaffDashboardPage() {
             <TabsTrigger value="reset" className="min-h-11 min-w-[92px] px-3 py-3">
               リセット
             </TabsTrigger>
+            <TabsTrigger value="settings" className="min-h-11 min-w-[92px] px-3 py-3">
+              設定
+            </TabsTrigger>
             <TabsTrigger value="report" className="min-h-11 min-w-[92px] px-3 py-3">
               レポート
             </TabsTrigger>
@@ -227,6 +231,10 @@ export default function StaffDashboardPage() {
 
           <TabsContent value="reset">
             <GameResetPanel onResetComplete={fetchData} />
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <TeamMapSettingsPanel />
           </TabsContent>
 
           <TabsContent value="report">

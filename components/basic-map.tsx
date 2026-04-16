@@ -4,11 +4,9 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, Locate, MapPin, Users, RefreshCw } from "lucide-react"
-import { getCheckpoints, getTeamLocations, type Checkpoint, type Team, type TeamLocation } from "@/lib/supabase"
+import { getCheckpoints, getTeamLocations, getTeamMapSettings, type Checkpoint, type Team, type TeamLocation } from "@/lib/supabase"
 import { LOCATION_UPDATED_EVENT } from "./location-tracker"
 import { useToast } from "@/hooks/use-toast"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 
 // BasicMapコンポーネントのpropsにonErrorを追加
 interface BasicMapProps {
@@ -30,10 +28,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   const [isUpdatingLocations, setIsUpdatingLocations] = useState(false)
   const [autoUpdate, setAutoUpdate] = useState(true) // 自動更新の状態
   const [updateInterval, setUpdateInterval] = useState(180) // 更新間隔（秒）- 3分に変更
-  const [updateCountdown, setUpdateCountdown] = useState(updateInterval)
   const autoUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null)
   // 選択されたチェックポイントのIDを保持する状態
   const [selectedCheckpointId, setSelectedCheckpointId] = useState<number | null>(null)
   // 強調表示アニメーションのタイマー
@@ -53,13 +48,22 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
 
   // データの取得
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const settings = await getTeamMapSettings()
+        setAutoUpdate(settings.team_map_auto_refresh_enabled)
+        setUpdateInterval(settings.team_map_refresh_interval_seconds)
+      } catch (error) {
+        console.error("Failed to fetch map settings:", error)
+      }
+    }
+
     const fetchData = async () => {
       try {
         const [checkpointsData, locationsData] = await Promise.all([getCheckpoints(), getTeamLocations()])
         setCheckpoints(checkpointsData)
         setTeamLocations(locationsData)
         setLoading(false)
-        setLastUpdateTime(new Date().toLocaleTimeString())
       } catch (err) {
         console.error("Failed to fetch map data:", err)
         setError("マップデータの取得に失敗しました")
@@ -67,6 +71,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
     }
 
+    void fetchSettings()
     fetchData()
   }, [])
 
@@ -98,33 +103,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       stopAutoUpdate()
     }
   }, [autoUpdate, updateInterval, mapInitialized])
-
-  // カウントダウンの処理
-  useEffect(() => {
-    if (autoUpdate && mapInitialized) {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current)
-      }
-
-      setUpdateCountdown(updateInterval)
-
-      countdownIntervalRef.current = setInterval(() => {
-        setUpdateCountdown((prev) => {
-          if (prev <= 1) {
-            refreshTeamLocations()
-            return updateInterval
-          }
-          return prev - 1
-        })
-      }, 1000)
-    }
-
-    return () => {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current)
-      }
-    }
-  }, [autoUpdate, mapInitialized, updateInterval])
 
   // 選択されたチェックポイントが変更されたときの処理
   useEffect(() => {
@@ -298,9 +276,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
       }
       if (autoUpdateIntervalRef.current) {
         clearInterval(autoUpdateIntervalRef.current)
-      }
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current)
       }
       if (mapInitTimeoutRef.current) {
         clearTimeout(mapInitTimeoutRef.current)
@@ -825,33 +800,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   }
 
   // 手動で全ての位置情報を更新
-  const handleRefreshAll = async () => {
-    if (isUpdatingLocations) return
-
-    toast({
-      title: "更新中",
-      description: "全てのチームの位置情報を更新しています...",
-      duration: 2000,
-    })
-
-    // 現在位置を取得
-    getCurrentLocation()
-
-    // 他のチームの位置情報を更新
-    await refreshTeamLocations()
-
-    toast({
-      title: "更新完了",
-      description: "全てのチームの位置情報を更新しました",
-      duration: 2000,
-    })
-  }
-
-  // 自動更新の切り替え
-  const toggleAutoUpdate = () => {
-    setAutoUpdate(!autoUpdate)
-  }
-
   // チェックポイントをクリックした時の処理
   const handleCheckpointClick = (checkpointId: number) => {
     setSelectedCheckpointId(checkpointId)
@@ -867,13 +815,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
         </div>
       </div>
     )
-  }
-
-  // カウントダウン表示部分も改善
-  const formatCountdown = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
   }
 
   return (
@@ -917,29 +858,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
           <span className="ml-1">現在地を表示</span>
         </Button>
 
-        {/* 全ての位置情報を更新するボタン */}
-        <Button
-          className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-sm text-primary hover:bg-primary hover:text-white rounded-full shadow-md hover:shadow-glow flex items-center gap-2 z-20 border border-white/50"
-          onClick={handleRefreshAll}
-          disabled={isUpdatingLocations || !mapInitialized}
-        >
-          {isUpdatingLocations ? (
-            <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
-          ) : (
-            <RefreshCw className="h-5 w-5" />
-          )}
-          <span className="ml-1">全て更新</span>
-        </Button>
-
-        {/* 自動更新プログレスバー */}
-        {autoUpdate && mapInitialized && (
-          <div className="absolute bottom-16 left-4 right-4 bg-white/50 h-1 rounded-full overflow-hidden z-20">
-            <div
-              className="h-full bg-primary transition-all duration-1000 ease-linear"
-              style={{ width: `${(updateCountdown / updateInterval) * 100}%` }}
-            ></div>
-          </div>
-        )}
       </div>
 
       {!mapInitialized && leafletLoaded && (
@@ -999,43 +917,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
               <Users className="h-5 w-5 text-primary" />
               <h3 className="font-heading text-primary text-lg">チーム位置情報</h3>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setUpdateInterval(Math.max(60, updateInterval - 30))}
-                disabled={updateInterval <= 60}
-              >
-                -
-              </Button>
-              <span className="text-xs">
-                {Math.floor(updateInterval / 60)}分{updateInterval % 60 > 0 ? `${updateInterval % 60}秒` : ""}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => setUpdateInterval(Math.min(600, updateInterval + 30))}
-                disabled={updateInterval >= 600}
-              >
-                +
-              </Button>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full text-xs px-2 py-1 h-auto"
-              onClick={refreshTeamLocations}
-              disabled={isUpdatingLocations}
-            >
-              {isUpdatingLocations ? (
-                <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-1"></div>
-              ) : (
-                <RefreshCw className="h-3 w-3 mr-1" />
-              )}
-              更新
-            </Button>
           </div>
           <p className="text-sm text-muted-foreground mb-3">全{teamLocations.length}チーム</p>
           <div className="max-h-60 overflow-y-auto scrollbar-thin">
@@ -1071,29 +952,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
           </div>
         </div>
       </div>
-
-      {/* OpenStreetMap情報を下部に移動 */}
-      <Alert
-        variant="default"
-        className="rounded-xl border-2 border-primary/20 bg-white/80 backdrop-blur-sm shadow-sm mt-6"
-      >
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-primary" />
-            <AlertTitle className="font-medium">OpenStreetMapを使用しています</AlertTitle>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch id="map-auto-update" checked={autoUpdate} onCheckedChange={toggleAutoUpdate} />
-            {/* 自動更新のラベル部分を修正 */}
-            <Label htmlFor="map-auto-update" className="cursor-pointer text-xs">
-              自動更新 {autoUpdate && updateCountdown ? `(${formatCountdown(updateCountdown)})` : ""}
-            </Label>
-          </div>
-        </div>
-        <AlertDescription className="text-xs mt-1">
-          {lastUpdateTime && <p className="text-xs mt-1">最終更新: {lastUpdateTime}</p>}
-        </AlertDescription>
-      </Alert>
 
       {/* デバッグ情報 - 開発中のみ表示 */}
       {process.env.NODE_ENV === "development" && (

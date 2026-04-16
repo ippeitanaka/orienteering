@@ -165,6 +165,14 @@ export interface GameResetTargets {
   timer: boolean
 }
 
+export interface TeamMapSettings {
+  team_location_auto_update_enabled: boolean
+  team_location_update_interval_seconds: number
+  team_map_auto_refresh_enabled: boolean
+  team_map_refresh_interval_seconds: number
+  updated_at?: string
+}
+
 export async function getCheckpoints(options?: { activeOnly?: boolean }): Promise<Checkpoint[]> {
   const searchParams = new URLSearchParams()
   if (options?.activeOnly) {
@@ -549,5 +557,43 @@ export async function resetGameData(targets: GameResetTargets): Promise<{ succes
   return {
     success: true,
     message: result.message || "ゲームデータをリセットしました",
+  }
+}
+
+export async function getTeamMapSettings(): Promise<TeamMapSettings> {
+  const response = await fetch("/api/team-map-settings", { cache: "no-store" })
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch team map settings")
+  }
+
+  return result.data
+}
+
+export async function updateTeamMapSettings(
+  settings: TeamMapSettings,
+): Promise<{ success: boolean; message: string; data?: TeamMapSettings }> {
+  const response = await fetch("/api/team-map-settings", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(settings),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok || !result.success) {
+    return {
+      success: false,
+      message: result.error || "チーム向け地図設定の更新に失敗しました",
+    }
+  }
+
+  return {
+    success: true,
+    message: result.message || "チーム向け地図設定を更新しました",
+    data: result.data,
   }
 }
