@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { AlertCircle, Edit, QrCode, Trash, Plus, RefreshCw } from "lucide-react"
+import { AlertCircle, Edit, Trash, Plus, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Switch } from "@/components/ui/switch"
 import CheckpointForm from "@/components/staff/checkpoint-form"
-import CheckpointQrSheet from "@/components/staff/checkpoint-qr-sheet"
-import { getCheckpoints, type Checkpoint } from "@/lib/supabase"
+import { getCheckpoints, type Checkpoint, updateCheckpoint } from "@/lib/supabase"
 
 export default function CheckpointManager() {
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([])
@@ -18,9 +18,9 @@ export default function CheckpointManager() {
   const [error, setError] = useState<string | null>(null)
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false)
   const [currentCheckpoint, setCurrentCheckpoint] = useState<Checkpoint | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [togglingCheckpointId, setTogglingCheckpointId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchCheckpoints()
@@ -56,11 +56,6 @@ export default function CheckpointManager() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleShowQr = (checkpoint: Checkpoint) => {
-    setCurrentCheckpoint(checkpoint)
-    setIsQrDialogOpen(true)
-  }
-
   const confirmDeleteCheckpoint = async () => {
     if (!currentCheckpoint) return
 
@@ -87,19 +82,42 @@ export default function CheckpointManager() {
     setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
   }
 
+  const handleToggleCheckpoint = async (checkpoint: Checkpoint, checked: boolean) => {
+    try {
+      setTogglingCheckpointId(checkpoint.id)
+      const result = await updateCheckpoint(checkpoint.id, { is_checkpoint: checked })
+
+      if (!result.success) {
+        throw new Error(result.message || "チェックポイント設定の更新に失敗しました")
+      }
+
+      setCheckpoints((prev) =>
+        prev.map((item) => (item.id === checkpoint.id ? { ...item, is_checkpoint: checked } : item)),
+      )
+      setError(null)
+    } catch (err) {
+      console.error("Failed to toggle checkpoint state:", err)
+      setError(err instanceof Error ? err.message : "チェックポイント設定の更新中にエラーが発生しました")
+    } finally {
+      setTogglingCheckpointId(null)
+    }
+  }
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>チェックポイント管理</CardTitle>
-          <CardDescription>チェックポイントの作成、編集、削除を行います</CardDescription>
+          <CardDescription>
+            チーム画面で有効なチェックポイントは {checkpoints.filter((checkpoint) => checkpoint.is_checkpoint !== false).length} 件です
+          </CardDescription>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRefreshTrigger((prev) => prev + 1)}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button variant="outline" size="sm" className="min-h-11" onClick={() => setRefreshTrigger((prev) => prev + 1)}>
             <RefreshCw className="h-4 w-4 mr-1" />
             更新
           </Button>
-          <Button size="sm" onClick={handleCreateCheckpoint}>
+          <Button size="sm" className="min-h-11" onClick={handleCreateCheckpoint}>
             <Plus className="h-4 w-4 mr-1" />
             新規作成
           </Button>
@@ -119,13 +137,14 @@ export default function CheckpointManager() {
             <p className="mt-2">チェックポイント情報を読み込み中...</p>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="min-w-[980px]">
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>名前</TableHead>
                   <TableHead>種別</TableHead>
+                  <TableHead>チーム画面</TableHead>
                   <TableHead>担当スタッフ</TableHead>
                   <TableHead>説明</TableHead>
                   <TableHead>位置</TableHead>
@@ -136,19 +155,29 @@ export default function CheckpointManager() {
               <TableBody>
                 {checkpoints.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={9} className="text-center py-8">
                       チェックポイントがありません
                     </TableCell>
                   </TableRow>
                 ) : (
                   checkpoints.map((checkpoint) => (
-                    <TableRow key={checkpoint.id}>
+                    <TableRow key={checkpoint.id} className="min-w-[980px]">
                       <TableCell>{checkpoint.id}</TableCell>
                       <TableCell className="font-medium">{checkpoint.name}</TableCell>
                       <TableCell>
                         <Badge variant={checkpoint.is_moving ? "default" : "outline"}>
                           {checkpoint.is_moving ? "移動" : "固定"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Switch
+                            checked={checkpoint.is_checkpoint !== false}
+                            disabled={togglingCheckpointId === checkpoint.id}
+                            onCheckedChange={(checked) => void handleToggleCheckpoint(checkpoint, checked)}
+                          />
+                          <span className="text-sm text-muted-foreground">{checkpoint.is_checkpoint !== false ? "ON" : "OFF"}</span>
+                        </div>
                       </TableCell>
                       <TableCell>{checkpoint.assigned_staff_name || "-"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{checkpoint.description || "-"}</TableCell>
@@ -161,14 +190,6 @@ export default function CheckpointManager() {
                       <TableCell>{checkpoint.point_value}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleShowQr(checkpoint)}
-                            title="QRコード"
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -206,15 +227,6 @@ export default function CheckpointManager() {
               onSuccess={handleFormSuccess}
               onCancel={() => setIsFormDialogOpen(false)}
             />
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-5xl">
-            <DialogHeader>
-              <DialogTitle>QRポスター</DialogTitle>
-            </DialogHeader>
-            {currentCheckpoint ? <CheckpointQrSheet checkpoint={currentCheckpoint} /> : null}
           </DialogContent>
         </Dialog>
 

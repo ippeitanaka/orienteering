@@ -24,11 +24,11 @@ export interface Checkpoint {
   id: number
   created_at: string
   name: string
-  qr_token?: string | null
   description: string | null
   latitude: number
   longitude: number
   point_value: number
+  is_checkpoint?: boolean
   is_moving?: boolean
   assigned_staff_id?: number | null
   assigned_staff_name?: string | null
@@ -114,8 +114,13 @@ export interface TimerSettings {
   updated_at: string
 }
 
-export async function getCheckpoints(): Promise<Checkpoint[]> {
-  const response = await fetch("/api/checkpoints", { cache: "no-store" })
+export async function getCheckpoints(options?: { activeOnly?: boolean }): Promise<Checkpoint[]> {
+  const searchParams = new URLSearchParams()
+  if (options?.activeOnly) {
+    searchParams.set("activeOnly", "true")
+  }
+
+  const response = await fetch(`/api/checkpoints${searchParams.size ? `?${searchParams.toString()}` : ""}`, { cache: "no-store" })
   const result = await response.json()
 
   if (!response.ok) {

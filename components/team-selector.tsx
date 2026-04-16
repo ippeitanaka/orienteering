@@ -43,9 +43,9 @@ export default function TeamSelector({ teams, onSelect }: TeamSelectorProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Alert className="bg-primary/10 border-primary/20">
-        <AlertDescription>
+        <AlertDescription className="text-sm leading-6">
           チームコードを入力してログインしてください。チームコードはスタッフから提供されます。
         </AlertDescription>
       </Alert>
@@ -64,11 +64,11 @@ export default function TeamSelector({ teams, onSelect }: TeamSelectorProps) {
               setTeamCode(e.target.value)
               setError("")
             }}
-            className="cute-input"
+            className="cute-input min-h-12 text-base"
           />
         </div>
         {error && <p className="text-destructive text-sm animate-pulse-soft">{error}</p>}
-        <Button type="submit" className="w-full cute-button flex items-center gap-2">
+        <Button type="submit" className="w-full min-h-12 cute-button flex items-center gap-2 text-base font-bold">
           <LogIn className="h-4 w-4" />
           ログイン
         </Button>

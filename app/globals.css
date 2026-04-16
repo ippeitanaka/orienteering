@@ -87,6 +87,8 @@
 @layer components {
   .elt-container {
     @apply container mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8;
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
   }
 
   .elt-card {
@@ -107,6 +109,8 @@
 
   .elt-header {
     @apply bg-background border-b border-border/50 shadow-sm py-2 px-3 sm:py-3 sm:px-4;
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
   }
 
   .elt-footer {

@@ -85,17 +85,17 @@ export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>チーム管理</CardTitle>
           <CardDescription>チームの作成、編集、削除を行います</CardDescription>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setRefreshTrigger((prev) => prev + 1)}>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button variant="outline" size="sm" className="min-h-11" onClick={() => setRefreshTrigger((prev) => prev + 1)}>
             <RefreshCw className="h-4 w-4 mr-1" />
             更新
           </Button>
-          <Button size="sm" onClick={handleCreateTeam}>
+          <Button size="sm" className="min-h-11" onClick={handleCreateTeam}>
             <Plus className="h-4 w-4 mr-1" />
             新規作成
           </Button>
@@ -115,9 +115,9 @@ export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
             <p className="mt-2">チーム情報を読み込み中...</p>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="min-w-[760px]">
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>チーム名</TableHead>
@@ -136,7 +136,7 @@ export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
                   </TableRow>
                 ) : (
                   teams.map((team) => (
-                    <TableRow key={team.id}>
+                    <TableRow key={team.id} className="min-w-[760px]">
                       <TableCell>{team.id}</TableCell>
                       <TableCell className="font-medium">{team.name}</TableCell>
                       <TableCell>{team.team_code || team.id}</TableCell>

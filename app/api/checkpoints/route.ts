@@ -15,11 +15,13 @@ const normalizePointValue = (value: unknown) => {
 }
 
 // チェックポイント一覧を取得
-export async function GET() {
+export async function GET(request: Request) {
   try {
     if (!supabaseServer) {
       return NextResponse.json({ error: "Database connection not available" }, { status: 500 })
     }
+
+    const activeOnly = new URL(request.url).searchParams.get("activeOnly") === "true"
 
     const [{ data, error }, { data: staffData, error: staffError }, { data: staffLocations, error: staffLocationError }] =
       await Promise.all([
@@ -70,10 +72,12 @@ export async function GET() {
     const enrichedCheckpoints = (data || []).map((checkpoint) => {
       const assignedStaff = assignedStaffByCheckpoint.get(checkpoint.id)
       const latestLocation = assignedStaff ? latestStaffLocations.get(assignedStaff.id) : null
+      const isCheckpoint = checkpoint.is_checkpoint !== false
 
       return {
         ...checkpoint,
         point_value: normalizePointValue(checkpoint.point_value),
+        is_checkpoint: isCheckpoint,
         is_moving: !!assignedStaff,
         assigned_staff_id: assignedStaff?.id ?? null,
         assigned_staff_name: assignedStaff?.name ?? null,
@@ -86,7 +90,7 @@ export async function GET() {
       }
     })
 
-    return NextResponse.json({ data: enrichedCheckpoints })
+    return NextResponse.json({ data: activeOnly ? enrichedCheckpoints.filter((checkpoint) => checkpoint.is_checkpoint) : enrichedCheckpoints })
   } catch (error) {
     console.error("Error in GET /api/checkpoints:", error)
     return NextResponse.json({ error: "Failed to fetch checkpoints" }, { status: 500 })
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, description, latitude, longitude, point_value, assigned_staff_id } = body
+    const { name, description, latitude, longitude, point_value, assigned_staff_id, is_checkpoint } = body
 
     if (!name || latitude === undefined || longitude === undefined) {
       return NextResponse.json({ error: "Name, latitude, and longitude are required" }, { status: 400 })
@@ -114,6 +118,7 @@ export async function POST(request: Request) {
       latitude,
       longitude,
       point_value: point_value ? String(point_value) : "0",
+      is_checkpoint: is_checkpoint !== false,
     }
 
     console.log("Creating checkpoint with data:", checkpointData)

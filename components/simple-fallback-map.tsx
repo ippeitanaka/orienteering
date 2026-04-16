@@ -42,7 +42,7 @@ export default function SimpleFallbackMap({ teams, onRetry }: SimpleFallbackMapP
       }
 
       try {
-        const [checkpointsData, locationsData] = await Promise.all([getCheckpoints(), getTeamLocations()])
+          const [checkpointsData, locationsData] = await Promise.all([getCheckpoints(), getTeamLocations()])
         setCheckpoints(checkpointsData)
         setTeamLocations(locationsData)
       } catch (err) {

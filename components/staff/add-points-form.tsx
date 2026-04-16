@@ -100,7 +100,7 @@ export default function AddPointsForm({ teams = [], onSuccess }: AddPointsFormPr
           )}
         </CardContent>
         <CardFooter>
-          <Button type="submit" disabled={loading || !teamId}>
+                  <Button type="submit" className="w-full min-h-11" disabled={loading || !teamId}>
             {loading ? "処理中..." : "ポイントを追加"}
           </Button>
         </CardFooter>

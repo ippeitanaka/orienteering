@@ -67,7 +67,7 @@ export default function EventReport() {
 
         {report ? (
           <>
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground">イベント状態</p>
@@ -103,9 +103,9 @@ export default function EventReport() {
                 <CardHeader>
                   <CardTitle className="text-base">チーム別サマリー</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="min-w-[680px]">
                       <TableRow>
                         <TableHead>順位</TableHead>
                         <TableHead>チーム</TableHead>
@@ -138,9 +138,9 @@ export default function EventReport() {
                 <CardHeader>
                   <CardTitle className="text-base">チェックポイント別サマリー</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="min-w-[640px]">
                       <TableRow>
                         <TableHead>チェックポイント</TableHead>
                         <TableHead>訪問数</TableHead>

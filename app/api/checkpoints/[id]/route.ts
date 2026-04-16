@@ -85,6 +85,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       data: {
         ...data,
         point_value: normalizePointValue(data.point_value),
+        is_checkpoint: data.is_checkpoint !== false,
         is_moving: !!assignedStaff,
         assigned_staff_id: assignedStaff?.id ?? null,
         assigned_staff_name: assignedStaff?.name ?? null,
@@ -119,7 +120,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const body = await request.json()
 
     // 更新可能なフィールドを制限
-    const { name, description, latitude, longitude, point_value, assigned_staff_id } = body
+    const { name, description, latitude, longitude, point_value, assigned_staff_id, is_checkpoint } = body
     const updateData: Record<string, any> = {}
 
     if (name !== undefined) updateData.name = name
@@ -127,6 +128,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (latitude !== undefined) updateData.latitude = latitude
     if (longitude !== undefined) updateData.longitude = longitude
     if (point_value !== undefined) updateData.point_value = String(point_value) // 文字列に変換
+    if (is_checkpoint !== undefined) updateData.is_checkpoint = !!is_checkpoint
 
     // データが空の場合はエラー
     if (Object.keys(updateData).length === 0) {

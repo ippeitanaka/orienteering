@@ -141,7 +141,7 @@ export default function StaffLoginPage() {
     <div className="elt-bg min-h-screen">
       <div className="elt-container">
         <div className="max-w-md mx-auto">
-          <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
+          <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 sm:mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
             ホームに戻る
           </Link>
@@ -149,16 +149,10 @@ export default function StaffLoginPage() {
           <Card className="elt-card">
             <CardHeader>
               <div className="flex justify-center mb-4">
-                <Image
-                  src="/images/elt-logo.png"
-                  alt="ELT 27周年記念ロゴ"
-                  width={120}
-                  height={72}
-                  className="elt-logo"
-                />
+                <Image src="/images/elt-logo.png" alt="ELT 27周年記念ロゴ" width={120} height={72} className="elt-logo h-auto w-24 sm:w-[120px]" />
               </div>
-              <CardTitle className="text-center">スタッフログイン</CardTitle>
-              <CardDescription className="text-center">
+              <CardTitle className="text-center text-xl sm:text-2xl">スタッフログイン</CardTitle>
+              <CardDescription className="text-center text-sm sm:text-base leading-6">
                 スタッフ名とパスワードを入力してログインしてください
               </CardDescription>
             </CardHeader>
@@ -175,7 +169,7 @@ export default function StaffLoginPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="スタッフ名を入力"
-                    className="elt-input"
+                    className="elt-input min-h-12 text-base"
                     required
                   />
                 </div>
@@ -190,7 +184,7 @@ export default function StaffLoginPage() {
                     value={passcode}
                     onChange={(e) => setPasscode(e.target.value)}
                     placeholder="パスワードを入力"
-                    className="elt-input"
+                    className="elt-input min-h-12 text-base"
                     required
                   />
                 </div>
@@ -201,7 +195,7 @@ export default function StaffLoginPage() {
                 )}
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="elt-button w-full" disabled={loading}>
+                <Button type="submit" className="elt-button w-full min-h-12 text-base font-bold" disabled={loading}>
                   {loading ? (
                     <span className="flex items-center">
                       <span className="animate-spin h-4 w-4 mr-2 border-2 border-current border-t-transparent rounded-full"></span>
@@ -216,7 +210,7 @@ export default function StaffLoginPage() {
           </Card>
 
           <div className="mt-6">
-            <Button variant="outline" size="sm" onClick={handleSetup} className="w-full">
+            <Button variant="outline" size="sm" onClick={handleSetup} className="w-full min-h-11">
               初期データセットアップ
             </Button>
             {setupStatus && (

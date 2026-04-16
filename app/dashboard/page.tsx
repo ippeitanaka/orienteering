@@ -52,7 +52,7 @@ export default function Dashboard() {
 
     async function fetchData() {
       try {
-        const [teamsData, checkpointData] = await Promise.all([getTeams(), getCheckpoints()])
+        const [teamsData, checkpointData] = await Promise.all([getTeams(), getCheckpoints({ activeOnly: true })])
         setTeams(teamsData)
         setCheckpoints(checkpointData)
 
@@ -219,18 +219,18 @@ export default function Dashboard() {
   // ダッシュボードのヘッダー部分
   return (
     <div className="elt-bg min-h-screen">
-      <header className="elt-header py-4 shadow-sm relative overflow-hidden">
-        <div className="container mx-auto px-4 flex justify-between items-center relative z-10">
-          <div className="flex items-center gap-3">
-            <Image src="/images/elt-logo.png" alt="ELT 27周年記念ロゴ" width={80} height={48} className="elt-logo" />
-            <h1 className="text-xl font-bold font-heading">学外オリエンテーション</h1>
+      <header className="elt-header py-3 sm:py-4 shadow-sm relative overflow-hidden">
+        <div className="container mx-auto px-4 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center relative z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <Image src="/images/elt-logo.png" alt="ELT 27周年記念ロゴ" width={80} height={48} className="elt-logo h-auto w-14 sm:w-20" />
+            <h1 className="text-lg sm:text-xl font-bold font-heading leading-tight">学外オリエンテーション</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
             <Link href="/help/maps-api">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
+                className="h-10 min-w-10 text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
               >
                 <HelpCircle className="h-5 w-5" />
                 <span className="sr-only md:not-sr-only md:ml-2">ヘルプ</span>
@@ -240,7 +240,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
+                className="h-10 min-w-10 text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
               >
                 <Home className="h-5 w-5" />
                 <span className="sr-only md:not-sr-only md:ml-2">ホーム</span>
@@ -254,8 +254,8 @@ export default function Dashboard() {
         {!selectedTeam ? (
           <Card className="elt-card max-w-md mx-auto shadow-elt-sharp slide-in">
             <CardHeader>
-              <CardTitle className="text-center font-heading text-2xl">チームログイン</CardTitle>
-              <CardDescription className="text-center text-lg mt-2">
+              <CardTitle className="text-center font-heading text-xl sm:text-2xl">チームログイン</CardTitle>
+              <CardDescription className="text-center text-base sm:text-lg mt-2 leading-relaxed">
                 スタッフから提供されたチームコードを入力してください
               </CardDescription>
             </CardHeader>
@@ -264,19 +264,19 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between bg-card p-4 rounded-md shadow-elt-sharp slide-in">
-              <div className="flex items-center gap-3">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col gap-3 bg-card p-3 sm:p-4 rounded-md shadow-elt-sharp slide-in sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className="w-6 h-6 rounded-sm shadow-sm border border-border/50"
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-sm shadow-sm border border-border/50 shrink-0"
                   style={{ backgroundColor: selectedTeam.color }}
                 ></div>
-                <h2 className="text-xl font-heading">{selectedTeam.name}</h2>
+                <h2 className="text-lg sm:text-xl font-heading leading-tight break-words">{selectedTeam.name}</h2>
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="rounded-sm border-border/50 hover:bg-accent flex items-center gap-2"
+                className="rounded-sm border-border/50 hover:bg-accent flex items-center justify-center gap-2 w-full sm:w-auto min-h-11"
                 onClick={() => {
                   setSelectedTeam(null)
                   if (typeof window !== "undefined") {
@@ -296,30 +296,30 @@ export default function Dashboard() {
 
             <Card className="elt-card shadow-elt-sharp slide-in delay-100">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-sm">
-                  <TabsTrigger value="map" className="elt-nav-item flex items-center gap-2 h-12">
+                <TabsList className="grid h-auto grid-cols-2 gap-2 p-2 bg-muted/40 mx-2 mt-2 rounded-sm">
+                  <TabsTrigger value="map" className="elt-nav-item flex items-center justify-center gap-2 min-h-11 px-3 py-3 text-sm sm:text-base">
                     <Map className="h-5 w-5" />
                     マップ
                   </TabsTrigger>
-                  <TabsTrigger value="score" className="elt-nav-item flex items-center gap-2 h-12">
+                  <TabsTrigger value="score" className="elt-nav-item flex items-center justify-center gap-2 min-h-11 px-3 py-3 text-sm sm:text-base">
                     <Trophy className="h-5 w-5" />
                     スコア
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="map" className="p-4 slide-in">
+                <TabsContent value="map" className="p-3 sm:p-4 slide-in">
                   <div className="relative">
                     {activeArrivalCheckpoint ? (
                       <Alert className="mb-4 border-emerald-300 bg-gradient-to-r from-emerald-100 via-lime-50 to-emerald-100 text-emerald-950 shadow-xl animate-checkpoint-burst">
                         <Sparkles className="h-5 w-5" />
-                        <AlertTitle className="flex items-center gap-2 text-base">
+                        <AlertTitle className="flex flex-wrap items-center gap-2 text-sm sm:text-base">
                           チェックポイント到達圏内
                           {activeArrivalCheckpoint.is_moving ? (
                             <span className="rounded-full bg-emerald-700 px-2 py-0.5 text-xs text-white">移動中</span>
                           ) : null}
                         </AlertTitle>
                         <AlertDescription>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Crosshair className="h-4 w-4" />
                             <span className="font-semibold">{activeArrivalCheckpoint.name}</span>
                             <span className="text-sm text-emerald-800">+{activeArrivalCheckpoint.point_value}pt</span>
@@ -354,7 +354,7 @@ export default function Dashboard() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="score" className="p-4 slide-in">
+                <TabsContent value="score" className="p-3 sm:p-4 slide-in">
                   <Scoreboard />
                 </TabsContent>
               </Tabs>

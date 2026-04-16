@@ -171,20 +171,20 @@ export default function StaffDashboardPage() {
         </div>
 
         <Tabs defaultValue="checkpoints" className="w-full">
-          <TabsList className="grid grid-cols-5 mb-4 sm:mb-6 md:mb-8 text-xs sm:text-sm">
-            <TabsTrigger value="checkpoints" className="px-1 sm:px-2">
+          <TabsList className="mb-4 flex h-auto w-full items-stretch justify-start gap-2 overflow-x-auto rounded-md bg-muted/60 p-2 text-xs sm:mb-6 md:mb-8 sm:text-sm">
+            <TabsTrigger value="checkpoints" className="min-h-11 min-w-[120px] px-3 py-3">
               チェックポイント
             </TabsTrigger>
-            <TabsTrigger value="teams" className="px-1 sm:px-2">
+            <TabsTrigger value="teams" className="min-h-11 min-w-[104px] px-3 py-3">
               チーム管理
             </TabsTrigger>
-            <TabsTrigger value="scoreboard" className="px-1 sm:px-2">
+            <TabsTrigger value="scoreboard" className="min-h-11 min-w-[120px] px-3 py-3">
               スコアボード
             </TabsTrigger>
-            <TabsTrigger value="timer" className="px-1 sm:px-2">
+            <TabsTrigger value="timer" className="min-h-11 min-w-[92px] px-3 py-3">
               タイマー
             </TabsTrigger>
-            <TabsTrigger value="report" className="px-1 sm:px-2">
+            <TabsTrigger value="report" className="min-h-11 min-w-[92px] px-3 py-3">
               レポート
             </TabsTrigger>
           </TabsList>

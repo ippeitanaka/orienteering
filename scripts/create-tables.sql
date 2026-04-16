@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS checkpoints (
   description TEXT,
   latitude DOUBLE PRECISION NOT NULL,
   longitude DOUBLE PRECISION NOT NULL,
-  point_value INTEGER DEFAULT 10
+  point_value INTEGER DEFAULT 10,
+  is_checkpoint BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- 3. Checkins table (チェックイン記録)
