@@ -54,9 +54,16 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     font-feature-settings: "palt" 1; /* プロポーショナル字間調整 */
     -webkit-text-size-adjust: 100%; /* iOS用フォントサイズ自動調整を無効化 */
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
 
   /* フォントサイズと行高さの調整 */
