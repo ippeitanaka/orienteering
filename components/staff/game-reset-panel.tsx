@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { resetGameData, type GameResetTargets } from "@/lib/supabase"
+import { useToast } from "@/hooks/use-toast"
 
 interface GameResetPanelProps {
   onResetComplete?: () => Promise<void> | void
@@ -55,6 +56,7 @@ const DEFAULT_RESET_TARGETS: GameResetTargets = {
 }
 
 export default function GameResetPanel({ onResetComplete }: GameResetPanelProps) {
+  const { toast } = useToast()
   const [isResetting, setIsResetting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -88,6 +90,10 @@ export default function GameResetPanel({ onResetComplete }: GameResetPanelProps)
       }
 
       setSuccess(result.message)
+      toast({
+        title: "リセット完了",
+        description: result.message,
+      })
       setIsDialogOpen(false)
 
       if (onResetComplete) {
@@ -95,7 +101,13 @@ export default function GameResetPanel({ onResetComplete }: GameResetPanelProps)
       }
     } catch (resetError) {
       console.error("Failed to reset game data:", resetError)
-      setError(resetError instanceof Error ? resetError.message : "ゲームデータのリセット中にエラーが発生しました")
+      const message = resetError instanceof Error ? resetError.message : "ゲームデータのリセット中にエラーが発生しました"
+      setError(message)
+      toast({
+        title: "リセット失敗",
+        description: message,
+        variant: "destructive",
+      })
     } finally {
       setIsResetting(false)
     }
@@ -182,12 +194,14 @@ export default function GameResetPanel({ onResetComplete }: GameResetPanelProps)
         {error ? (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>リセット失敗</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : null}
 
         {success ? (
           <Alert>
+            <AlertTitle>リセット完了</AlertTitle>
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         ) : null}

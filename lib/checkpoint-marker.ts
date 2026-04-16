@@ -120,25 +120,6 @@ const checkpointMarkerStyles = `
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
 }
 
-.checkpoint-token__points {
-  position: absolute;
-  right: -4px;
-  bottom: -5px;
-  min-width: 26px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.92);
-  color: #fde68a;
-  font-size: 9px;
-  font-weight: 900;
-  line-height: 18px;
-  text-align: center;
-  letter-spacing: 0.04em;
-  transform: rotate(-45deg);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
-}
-
 .checkpoint-token__tail {
   position: absolute;
   left: 50%;
@@ -198,7 +179,6 @@ export const getCheckpointMarkerIconConfig = (checkpoint: Checkpoint, highlighte
   const variantClass = checkpoint.is_moving ? "checkpoint-token--moving" : "checkpoint-token--static"
   const highlightedClass = highlighted ? "checkpoint-token--highlighted" : ""
   const badgeLabel = checkpoint.id > 99 ? "99+" : String(checkpoint.id)
-  const pointLabel = `${checkpoint.point_value}P`
 
   return {
     className: "checkpoint-marker-shell",
@@ -211,7 +191,6 @@ export const getCheckpointMarkerIconConfig = (checkpoint: Checkpoint, highlighte
             <div class="checkpoint-token__glyph"></div>
           </div>
           <div class="checkpoint-token__level">${badgeLabel}</div>
-          <div class="checkpoint-token__points">${pointLabel}</div>
         </div>
         <div class="checkpoint-token__tail"></div>
       </div>

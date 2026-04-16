@@ -14,6 +14,51 @@ interface ResetTargets {
   timer?: boolean
 }
 
+const isMissingTableError = (error: { code?: string; message?: string } | null, tableName: string) => {
+  if (!error) {
+    return false
+  }
+
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    (typeof error.message === "string" && error.message.toLowerCase().includes(tableName.toLowerCase()))
+  )
+}
+
+const updateTimerState = async (resetTimestamp: string) => {
+  const existingTimerResult = await supabaseServer
+    .from("timer_settings")
+    .select("id")
+    .order("created_at", { ascending: false })
+    .limit(1)
+
+  if (existingTimerResult.error) {
+    return existingTimerResult
+  }
+
+  if (!existingTimerResult.data || existingTimerResult.data.length === 0) {
+    return await supabaseServer.from("timer_settings").insert([
+      {
+        duration: DEFAULT_TIMER_DURATION,
+        end_time: null,
+        is_running: false,
+        updated_at: resetTimestamp,
+      },
+    ])
+  }
+
+  return await supabaseServer
+    .from("timer_settings")
+    .update({
+      duration: DEFAULT_TIMER_DURATION,
+      end_time: null,
+      is_running: false,
+      updated_at: resetTimestamp,
+    })
+    .eq("id", existingTimerResult.data[0].id)
+}
+
 async function isStaffAuthenticated() {
   const cookieStore = await cookies()
   const staffSession = cookieStore.get("staff_session")
@@ -63,52 +108,108 @@ export async function POST(request: Request) {
     }
 
     const resetTimestamp = new Date().toISOString()
-    const operations = []
+    const completedTargets: string[] = []
+    const skippedTargets: string[] = []
 
     if (normalizedTargets.checkins) {
-      operations.push(supabaseServer.from("checkins").delete().neq("id", 0))
+      const result = await supabaseServer.from("checkins").delete().neq("id", 0)
+      if (result.error) {
+        if (isMissingTableError(result.error, "checkins")) {
+          skippedTargets.push("チェックイン履歴")
+        } else {
+          console.error("Error resetting checkins:", result.error)
+          return NextResponse.json({ error: `チェックイン履歴のリセットに失敗しました: ${result.error.message}`, success: false }, { status: 500 })
+        }
+      } else {
+        completedTargets.push("チェックイン履歴")
+      }
     }
 
     if (normalizedTargets.teamLocations) {
-      operations.push(supabaseServer.from("team_locations").delete().neq("id", 0))
-      operations.push(supabaseServer.from("team_location_locks").delete().neq("team_id", 0))
+      const teamLocationsResult = await supabaseServer.from("team_locations").delete().neq("id", 0)
+      if (teamLocationsResult.error && !isMissingTableError(teamLocationsResult.error, "team_locations")) {
+        console.error("Error resetting team_locations:", teamLocationsResult.error)
+        return NextResponse.json(
+          { error: `チーム GPS 履歴のリセットに失敗しました: ${teamLocationsResult.error.message}`, success: false },
+          { status: 500 },
+        )
+      }
+
+      const teamLocationLocksResult = await supabaseServer.from("team_location_locks").delete().neq("team_id", 0)
+      if (teamLocationLocksResult.error && !isMissingTableError(teamLocationLocksResult.error, "team_location_locks")) {
+        console.error("Error resetting team_location_locks:", teamLocationLocksResult.error)
+        return NextResponse.json(
+          { error: `チーム位置共有ロックのリセットに失敗しました: ${teamLocationLocksResult.error.message}`, success: false },
+          { status: 500 },
+        )
+      }
+
+      if (teamLocationsResult.error && teamLocationLocksResult.error) {
+        skippedTargets.push("チーム GPS 履歴")
+      } else {
+        completedTargets.push("チーム GPS 履歴")
+      }
     }
 
     if (normalizedTargets.movingCheckpoints) {
-      operations.push(supabaseServer.from("staff_locations").delete().neq("id", 0))
+      const result = await supabaseServer.from("staff_locations").delete().neq("id", 0)
+      if (result.error) {
+        if (isMissingTableError(result.error, "staff_locations")) {
+          skippedTargets.push("移動チェックポイント位置")
+        } else {
+          console.error("Error resetting staff_locations:", result.error)
+          return NextResponse.json(
+            { error: `移動チェックポイント位置のリセットに失敗しました: ${result.error.message}`, success: false },
+            { status: 500 },
+          )
+        }
+      } else {
+        completedTargets.push("移動チェックポイント位置")
+      }
     }
 
     if (normalizedTargets.scores) {
-      operations.push(supabaseServer.from("teams").update({ total_score: 0 }).neq("id", 0))
+      const result = await supabaseServer.from("teams").update({ total_score: 0 }).neq("id", 0)
+      if (result.error) {
+        if (isMissingTableError(result.error, "teams")) {
+          skippedTargets.push("チーム得点")
+        } else {
+          console.error("Error resetting teams scores:", result.error)
+          return NextResponse.json({ error: `チーム得点のリセットに失敗しました: ${result.error.message}`, success: false }, { status: 500 })
+        }
+      } else {
+        completedTargets.push("チーム得点")
+      }
     }
 
     if (normalizedTargets.timer) {
-      operations.push(
-        supabaseServer
-          .from("timer_settings")
-          .update({
-            duration: DEFAULT_TIMER_DURATION,
-            end_time: null,
-            is_running: false,
-            updated_at: resetTimestamp,
-          })
-          .neq("id", 0),
-      )
+      const result = await updateTimerState(resetTimestamp)
+      if (result.error) {
+        if (isMissingTableError(result.error, "timer_settings")) {
+          skippedTargets.push("タイマー状態")
+        } else {
+          console.error("Error resetting timer:", result.error)
+          return NextResponse.json({ error: `タイマー状態のリセットに失敗しました: ${result.error.message}`, success: false }, { status: 500 })
+        }
+      } else {
+        completedTargets.push("タイマー状態")
+      }
     }
 
-    const results = await Promise.all(operations)
-
-    const operationError = results.find((result) => result.error)?.error
-
-    if (operationError) {
-      console.error("Error resetting game data:", operationError)
-      return NextResponse.json({ error: operationError.message, success: false }, { status: 500 })
+    const messageParts = []
+    if (completedTargets.length > 0) {
+      messageParts.push(`リセット完了: ${completedTargets.join("、")}`)
+    }
+    if (skippedTargets.length > 0) {
+      messageParts.push(`未作成テーブルのためスキップ: ${skippedTargets.join("、")}`)
     }
 
     return NextResponse.json({
       success: true,
-      message: "選択したゲームデータをリセットしました",
+      message: messageParts.join(" / ") || "選択したゲームデータをリセットしました",
       resetTargets: enabledTargets,
+      completedTargets,
+      skippedTargets,
     })
   } catch (error) {
     console.error("Error in POST /api/reset-game:", error)
