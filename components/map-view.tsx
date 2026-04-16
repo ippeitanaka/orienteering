@@ -17,6 +17,7 @@ export default function MapView({ teams }: MapViewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDebug, setShowDebug] = useState(false)
+  const visibleCheckpoints = checkpoints.filter((checkpoint) => checkpoint.is_checkpoint !== false)
 
   useEffect(() => {
     async function fetchData() {
@@ -87,11 +88,11 @@ export default function MapView({ teams }: MapViewProps) {
           <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
           <CardHeader>
             <CardTitle className="font-heading text-primary">チェックポイント一覧</CardTitle>
-            <CardDescription>全{checkpoints.length}箇所</CardDescription>
+            <CardDescription>全{visibleCheckpoints.length}箇所</CardDescription>
           </CardHeader>
           <CardContent className="max-h-60 overflow-y-auto">
             <ul className="space-y-2">
-              {checkpoints.map((checkpoint) => (
+              {visibleCheckpoints.map((checkpoint) => (
                 <li key={checkpoint.id} className="p-2 bg-muted rounded-md">
                   <p className="font-medium">{checkpoint.name}</p>
                   <p className="text-xs text-muted-foreground">

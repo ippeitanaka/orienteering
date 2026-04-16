@@ -18,6 +18,7 @@ export default function SimpleFallbackMap({ teams, onRetry }: SimpleFallbackMapP
   const [error, setError] = useState<string | null>(null)
   const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locating, setLocating] = useState(false)
+  const visibleCheckpoints = checkpoints.filter((checkpoint) => checkpoint.is_checkpoint !== false)
 
   useEffect(() => {
     async function fetchData() {
@@ -203,10 +204,10 @@ export default function SimpleFallbackMap({ teams, onRetry }: SimpleFallbackMapP
         {/* チェックポイント一覧 */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-primary/20">
           <h3 className="font-heading text-primary text-lg mb-2">チェックポイント一覧</h3>
-          <p className="text-sm text-muted-foreground mb-3">全{checkpoints.length}箇所</p>
+          <p className="text-sm text-muted-foreground mb-3">全{visibleCheckpoints.length}箇所</p>
           <div className="max-h-60 overflow-y-auto">
             <ul className="space-y-2">
-              {checkpoints.map((checkpoint) => (
+              {visibleCheckpoints.map((checkpoint) => (
                 <li key={checkpoint.id} className="p-2 bg-muted rounded-md">
                   <p className="font-medium">{checkpoint.name}</p>
                   <p className="text-xs text-muted-foreground">

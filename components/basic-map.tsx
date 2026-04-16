@@ -45,6 +45,7 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
   const leafletLoadAttemptsRef = useRef<number>(0)
   const mapUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const mapInitTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const visibleCheckpoints = checkpoints.filter((checkpoint) => checkpoint.is_checkpoint !== false)
 
   // データの取得
   useEffect(() => {
@@ -877,10 +878,10 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
             <MapPin className="h-5 w-5 text-primary" />
             <h3 className="font-heading text-primary text-lg">チェックポイント一覧</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">全{checkpoints.length}箇所</p>
+          <p className="text-sm text-muted-foreground mb-3">全{visibleCheckpoints.length}箇所</p>
           <div className="max-h-60 overflow-y-auto scrollbar-thin">
             <ul className="space-y-2">
-              {checkpoints.map((checkpoint) => (
+              {visibleCheckpoints.map((checkpoint) => (
                 <li
                   key={checkpoint.id}
                   className={`p-3 bg-muted/50 backdrop-blur-sm rounded-lg hover:bg-muted/70 transition-colors cursor-pointer ${

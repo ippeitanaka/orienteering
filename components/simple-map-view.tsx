@@ -19,6 +19,7 @@ export default function SimpleMapView({ teams }: SimpleMapViewProps) {
   const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const visibleCheckpoints = checkpoints.filter((checkpoint) => checkpoint.is_checkpoint !== false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -232,11 +233,11 @@ export default function SimpleMapView({ teams }: SimpleMapViewProps) {
           <div className="bg-gradient-to-r from-primary/20 to-secondary/30 p-1"></div>
           <CardHeader>
             <CardTitle className="font-heading text-primary">チェックポイント一覧</CardTitle>
-            <CardDescription>全{checkpoints.length}箇所</CardDescription>
+            <CardDescription>全{visibleCheckpoints.length}箇所</CardDescription>
           </CardHeader>
           <CardContent className="max-h-60 overflow-y-auto">
             <ul className="space-y-2">
-              {checkpoints.map((checkpoint) => (
+              {visibleCheckpoints.map((checkpoint) => (
                 <li key={checkpoint.id} className="p-2 bg-muted rounded-md">
                   <p className="font-medium">{checkpoint.name}</p>
                   <p className="text-xs text-muted-foreground">
