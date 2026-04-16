@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import CheckpointCheckinPanel from "@/components/checkpoint/checkpoint-checkin-panel"
+import TeamHomeButton from "@/components/team-home-button"
 import { supabaseServer } from "@/lib/supabase-server"
 
 const normalizePointValue = (value: unknown) => {
@@ -106,6 +107,10 @@ export default async function CheckpointQrLandingPage({ params }: { params: Prom
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#171717_0%,#2b2111_100%)] px-4 py-10 text-white">
       <div className="mx-auto max-w-3xl">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <TeamHomeButton className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white" label="ゲームホーム" />
+        </div>
+
         <div className="mb-8 flex items-center gap-4">
           <div className="rounded-2xl bg-white/90 p-3 shadow-lg">
             <Image src="/images/elt-logo.png" alt="ELTロゴ" width={56} height={56} className="h-14 w-14 object-contain" />

@@ -1,20 +1,18 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, ArrowLeft } from "lucide-react"
+import { AlertCircle } from "lucide-react"
+import TeamHomeButton from "@/components/team-home-button"
 
 export default function MapsApiHelpPage() {
   return (
     <div className="min-h-screen cute-bg">
       <header className="bg-primary/90 text-primary-foreground py-4 shadow-md">
         <div className="container mx-auto px-4 flex items-center">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              ホームに戻る
-            </Button>
-          </Link>
+          <TeamHomeButton
+            variant="ghost"
+            className="text-primary-foreground hover:bg-primary-foreground/10"
+            label="ゲームホームに戻る"
+          />
           <h1 className="text-2xl font-bold font-heading ml-4">マップ機能について</h1>
         </div>
       </header>

@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { getCheckpoints, getTeams, type Checkpoint, type Team } from "@/lib/supabase"
 import TeamSelector from "@/components/team-selector"
+import TeamHomeButton from "@/components/team-home-button"
 import LocationTracker from "@/components/location-tracker"
-import { Crosshair, Home, HelpCircle, Map, MapPin, Sparkles, Trophy, Users } from "lucide-react"
+import { Crosshair, HelpCircle, Map, MapPin, Sparkles, Trophy, Users } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import Scoreboard from "@/components/scoreboard"
@@ -236,16 +237,11 @@ export default function Dashboard() {
                 <span className="sr-only md:not-sr-only md:ml-2">ヘルプ</span>
               </Button>
             </Link>
-            <Link href="/">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-10 min-w-10 text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
-              >
-                <Home className="h-5 w-5" />
-                <span className="sr-only md:not-sr-only md:ml-2">ホーム</span>
-              </Button>
-            </Link>
+            <TeamHomeButton
+              variant="ghost"
+              className="h-10 min-w-10 text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
+              label="ホーム"
+            />
           </div>
         </div>
       </header>

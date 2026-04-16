@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
+import TeamHomeButton from "@/components/team-home-button"
 
 export default function TeamDashboardPage() {
   const [team, setTeam] = useState<any>(null)
@@ -95,6 +96,9 @@ export default function TeamDashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
+        <div className="mb-3 flex justify-end">
+          <TeamHomeButton label="ゲームホーム" />
+        </div>
         <h1 className="text-3xl font-bold mb-2">チームダッシュボード</h1>
         <div className="flex items-center justify-between">
           <p className="text-gray-600 dark:text-gray-300">
