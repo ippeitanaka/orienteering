@@ -43,7 +43,7 @@ const checkpointMarkerStyles = `
 }
 
 .checkpoint-token--moving .checkpoint-token__body {
-  background: linear-gradient(145deg, #22c55e 0%, #14b8a6 52%, #0f766e 100%);
+  background: linear-gradient(145deg, #60a5fa 0%, #2563eb 52%, #1d4ed8 100%);
 }
 
 .checkpoint-token__body::before {
@@ -133,7 +133,7 @@ const checkpointMarkerStyles = `
 }
 
 .checkpoint-token--moving .checkpoint-token__tail {
-  background: #115e59;
+  background: #1e3a8a;
 }
 
 .checkpoint-token--highlighted {

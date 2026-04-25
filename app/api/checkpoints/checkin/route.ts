@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { supabaseServer } from "@/lib/supabase-server"
 
+const LOCK_TIMEOUT_MINUTES = 10
+
 const normalizePointValue = (value: unknown) => {
   if (typeof value === "number") {
     return value
@@ -30,6 +32,15 @@ const isMissingRpcFunction = (error: { code?: string; message?: string } | null)
     error.code === "42883" ||
     error.code === "PGRST202" ||
     (typeof error.message === "string" && error.message.toLowerCase().includes("team_checkpoint_checkin"))
+  )
+}
+
+const isTeamLockTableMissing = (error: { code?: string; message?: string } | null | undefined) => {
+  if (!error) return false
+  return (
+    error.code === "42P01" ||
+    error.code === "PGRST205" ||
+    (typeof error.message === "string" && error.message.includes("team_location_locks"))
   )
 }
 
@@ -90,7 +101,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "チームログインが必要です" }, { status: 401 })
     }
 
-    let session: { team_id?: number } | null = null
+    let session: { team_id?: number; device_id?: string } | null = null
     try {
       session = JSON.parse(sessionCookie.value)
     } catch {
@@ -100,6 +111,10 @@ export async function POST(request: Request) {
     const teamId = session?.team_id
     if (!teamId) {
       return NextResponse.json({ error: "有効なチームセッションではありません" }, { status: 401 })
+    }
+
+    if (!session?.device_id) {
+      return NextResponse.json({ error: "端末認証情報が不足しています。再度チームログインしてください。" }, { status: 401 })
     }
 
     const body = await request.json()
@@ -126,6 +141,49 @@ export async function POST(request: Request) {
     const checkpoint = checkpointResult.data
     if (!checkpoint) {
       return NextResponse.json({ error: "チェックポイントが見つかりません" }, { status: 404 })
+    }
+
+    const { data: existingLock, error: lockError } = await supabaseServer
+      .from("team_location_locks")
+      .select("team_id, device_id, last_seen")
+      .eq("team_id", team.id)
+      .maybeSingle()
+
+    const lockTableMissing = isTeamLockTableMissing(lockError)
+    if (lockError && !lockTableMissing) {
+      console.error("Error fetching team device lock during checkin:", lockError)
+      return NextResponse.json({ error: "端末認証の確認に失敗しました" }, { status: 500 })
+    }
+
+    if (!lockTableMissing && existingLock) {
+      const isSameDevice = existingLock.device_id === session.device_id
+      const lockExpiredAt = new Date(Date.now() - LOCK_TIMEOUT_MINUTES * 60 * 1000)
+      const isExpired = new Date(existingLock.last_seen) < lockExpiredAt
+
+      if (!isSameDevice && !isExpired) {
+        return NextResponse.json(
+          {
+            error: "このチームは別の端末で利用中です。QRコードの読み取りは1端末のみ利用できます。",
+            code: "DEVICE_LOCKED",
+          },
+          { status: 409 },
+        )
+      }
+
+      const refreshedAt = new Date().toISOString()
+      const { error: updateLockError } = await supabaseServer
+        .from("team_location_locks")
+        .update({
+          device_id: session.device_id,
+          last_seen: refreshedAt,
+          updated_at: refreshedAt,
+        })
+        .eq("team_id", team.id)
+
+      if (updateLockError) {
+        console.error("Error refreshing team device lock during checkin:", updateLockError)
+        return NextResponse.json({ error: "端末認証の更新に失敗しました" }, { status: 500 })
+      }
     }
 
     const rpcResult = await supabaseServer.rpc("team_checkpoint_checkin", {

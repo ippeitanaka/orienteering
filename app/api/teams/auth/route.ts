@@ -1,15 +1,29 @@
 import { NextResponse } from "next/server"
 import { supabaseServer } from "@/lib/supabase-server"
 
+const LOCK_TIMEOUT_MINUTES = 10
+
+const isTeamLockTableMissing = (error: { code?: string; message?: string } | null | undefined) =>
+  Boolean(
+    error &&
+      (error.code === "42P01" ||
+        error.code === "PGRST205" ||
+        (typeof error.message === "string" && error.message.includes("team_location_locks"))),
+  )
+
 export async function POST(request: Request) {
   try {
     const requestData = await request.json()
-    const { team_code } = requestData
+    const { team_code, deviceId } = requestData
 
-    console.log("Team login attempt:", { team_code })
+    console.log("Team login attempt:", { team_code, hasDeviceId: !!deviceId })
 
     if (!team_code) {
       return NextResponse.json({ error: "チームコードが必要です" }, { status: 400 })
+    }
+
+    if (!deviceId || typeof deviceId !== "string") {
+      return NextResponse.json({ error: "端末識別子が必要です。再度ログインしてください。" }, { status: 400 })
     }
 
     if (!supabaseServer) {
@@ -28,20 +42,21 @@ export async function POST(request: Request) {
       )
     }
 
-    // チームコードでチームを検索
-    const { data: team, error } = await supabaseServer.from("teams").select("*").eq("team_code", team_code).single()
+    let normalizedTeam: any = null
+    const { data: teamByCode, error } = await supabaseServer.from("teams").select("*").eq("team_code", team_code).maybeSingle()
 
-    console.log("Team query result:", { team, error })
+    console.log("Team query result:", { team: teamByCode, error })
 
-    // チームコードが見つからない場合、IDで検索（後方互換性のため）
-    if (error || !team) {
+    if (teamByCode) {
+      normalizedTeam = teamByCode
+    } else {
       const teamId = Number.parseInt(team_code)
       if (!isNaN(teamId)) {
         const { data: teamById, error: errorById } = await supabaseServer
           .from("teams")
           .select("*")
           .eq("id", teamId)
-          .single()
+          .maybeSingle()
 
         if (errorById || !teamById) {
           return NextResponse.json(
@@ -53,7 +68,7 @@ export async function POST(request: Request) {
           )
         }
 
-        const team = teamById
+        normalizedTeam = teamById
       } else {
         return NextResponse.json(
           {
@@ -65,11 +80,73 @@ export async function POST(request: Request) {
       }
     }
 
+    const { data: existingLock, error: lockError } = await supabaseServer
+      .from("team_location_locks")
+      .select("team_id, device_id, last_seen")
+      .eq("team_id", normalizedTeam.id)
+      .maybeSingle()
+
+    const lockTableMissing = isTeamLockTableMissing(lockError)
+    if (lockError && !lockTableMissing) {
+      console.error("Error fetching team device lock:", lockError)
+      return NextResponse.json({ error: lockError.message }, { status: 500 })
+    }
+
+    if (!lockTableMissing) {
+      const now = new Date()
+      const lockExpiredAt = new Date(now.getTime() - LOCK_TIMEOUT_MINUTES * 60 * 1000)
+
+      if (existingLock) {
+        const isSameDevice = existingLock.device_id === deviceId
+        const isExpired = new Date(existingLock.last_seen) < lockExpiredAt
+
+        if (!isSameDevice && !isExpired) {
+          return NextResponse.json(
+            {
+              error: "このチームは別の端末でログイン中です。QRコードの読み取りは1端末のみ利用できます。",
+              code: "DEVICE_LOCKED",
+            },
+            { status: 409 },
+          )
+        }
+
+        const { error: updateLockError } = await supabaseServer
+          .from("team_location_locks")
+          .update({
+            device_id: deviceId,
+            last_seen: now.toISOString(),
+            updated_at: now.toISOString(),
+          })
+          .eq("team_id", normalizedTeam.id)
+
+        if (updateLockError) {
+          console.error("Error updating team device lock:", updateLockError)
+          return NextResponse.json({ error: updateLockError.message }, { status: 500 })
+        }
+      } else {
+        const now = new Date()
+        const { error: insertLockError } = await supabaseServer.from("team_location_locks").insert([
+          {
+            team_id: normalizedTeam.id,
+            device_id: deviceId,
+            last_seen: now.toISOString(),
+            updated_at: now.toISOString(),
+          },
+        ])
+
+        if (insertLockError) {
+          console.error("Error creating team device lock:", insertLockError)
+          return NextResponse.json({ error: insertLockError.message }, { status: 500 })
+        }
+      }
+    }
+
     // セッションにチーム情報を保存
     const session = {
-      team_id: team.id,
-      team_name: team.name,
-      team_code: team.team_code,
+      team_id: normalizedTeam.id,
+      team_name: normalizedTeam.name,
+      team_code: normalizedTeam.team_code,
+      device_id: deviceId,
     }
 
     // セッションCookieを設定
@@ -77,10 +154,10 @@ export async function POST(request: Request) {
       success: true,
       message: "ログイン成功",
       team: {
-        id: team.id,
-        name: team.name,
-        team_code: team.team_code,
-        color: team.color,
+        id: normalizedTeam.id,
+        name: normalizedTeam.name,
+        team_code: normalizedTeam.team_code,
+        color: normalizedTeam.color,
       },
     })
 

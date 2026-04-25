@@ -23,6 +23,21 @@ function TeamLoginContent() {
   const redirectPath = searchParams.get("redirect")
   const isCheckpointRedirect = redirectPath?.startsWith("/checkpoint/")
 
+  const getOrCreateDeviceId = () => {
+    const existingDeviceId = localStorage.getItem("teamAuthDeviceId")
+    if (existingDeviceId) {
+      return existingDeviceId
+    }
+
+    const nextDeviceId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+    localStorage.setItem("teamAuthDeviceId", nextDeviceId)
+    return nextDeviceId
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -30,6 +45,8 @@ function TeamLoginContent() {
     setDebugInfo(null)
 
     try {
+      const deviceId = getOrCreateDeviceId()
+
       console.log("Attempting team login with code:", teamCode)
 
       const response = await fetch("/api/teams/auth", {
@@ -37,7 +54,7 @@ function TeamLoginContent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ team_code: teamCode }),
+        body: JSON.stringify({ team_code: teamCode, deviceId }),
       })
 
       const data = await response.json()
@@ -57,6 +74,7 @@ function TeamLoginContent() {
         localStorage.setItem("teamId", data.team.id.toString())
         localStorage.setItem("teamName", data.team.name)
         localStorage.setItem("teamCode", data.team.team_code || "")
+        localStorage.setItem("teamAuthDeviceId", deviceId)
       }
 
       router.push(redirectPath || "/dashboard")

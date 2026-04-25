@@ -5,12 +5,13 @@ import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CheckCircle, AlertCircle } from "lucide-react"
 import { addPointsToTeam, type Team } from "@/lib/supabase"
+
+const POINT_OPTIONS = [-50, -30, -20, -10, -5, 5, 10, 20, 30, 50, 100]
 
 interface AddPointsFormProps {
   teams: Team[]
@@ -81,14 +82,19 @@ export default function AddPointsForm({ teams = [], onSuccess }: AddPointsFormPr
 
           <div className="space-y-2">
             <Label htmlFor="points">追加ポイント</Label>
-            <Input
-              id="points"
-              type="number"
-              value={points}
-              onChange={(e) => setPoints(Number.parseInt(e.target.value) || 0)}
-              required
-            />
-            <p className="text-xs text-muted-foreground">マイナス値を入力するとポイントを減らすことができます</p>
+            <Select value={points.toString()} onValueChange={(value) => setPoints(Number.parseInt(value, 10))}>
+              <SelectTrigger id="points">
+                <SelectValue placeholder="加減点を選択してください" />
+              </SelectTrigger>
+              <SelectContent>
+                {POINT_OPTIONS.map((value) => (
+                  <SelectItem key={value} value={value.toString()}>
+                    {value > 0 ? `+${value}ポイント` : `${value}ポイント`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">スマホでも選びやすいよう、加点・減点は候補から選択します</p>
           </div>
 
           {status && (
@@ -100,7 +106,7 @@ export default function AddPointsForm({ teams = [], onSuccess }: AddPointsFormPr
           )}
         </CardContent>
         <CardFooter>
-                  <Button type="submit" className="w-full min-h-11" disabled={loading || !teamId}>
+          <Button type="submit" className="w-full min-h-11" disabled={loading || !teamId}>
             {loading ? "処理中..." : "ポイントを追加"}
           </Button>
         </CardFooter>

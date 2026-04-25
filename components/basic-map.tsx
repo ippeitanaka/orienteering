@@ -458,7 +458,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
             <div style="min-width: 150px;">
               <h3 style="font-weight: bold; margin-bottom: 5px;">${checkpoint.name}</h3>
               <p style="margin: 5px 0;">${checkpoint.description || ""}</p>
-              <p style="margin: 5px 0; font-weight: bold;">ポイント: ${checkpoint.point_value}</p>
             </div>
           `)
 
@@ -497,7 +496,6 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
           <div style="min-width: 150px;">
             <h3 style="font-weight: bold; margin-bottom: 5px;">${checkpoint.name}</h3>
             <p style="margin: 5px 0;">${checkpoint.description || ""}</p>
-            <p style="margin: 5px 0; font-weight: bold;">ポイント: ${checkpoint.point_value}</p>
           </div>
         `)
 

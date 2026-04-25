@@ -149,7 +149,6 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
             <div>
               <h3 style="font-weight: bold;">${checkpoint.name}</h3>
               <p>${checkpoint.description || ""}</p>
-              <p>ポイント: ${checkpoint.point_value}</p>
             </div>
           `)
 

@@ -1,47 +1,13 @@
 import { NextResponse } from "next/server"
 import { supabaseServer } from "@/lib/supabase-server"
 
-const ensureStaffLocationsTable = async () => {
-  if (!supabaseServer) {
-    return { success: false, error: "Database connection not available" }
-  }
-
-  const { error } = await supabaseServer.from("staff_locations").select("staff_id").limit(1)
-
-  const tableMissing =
-    error?.code === "42P01" ||
-    error?.code === "PGRST205" ||
-    (typeof error?.message === "string" && error.message.includes("staff_locations"))
-
-  if (error && !tableMissing) {
-    return { success: false, error: error.message }
-  }
-
-  if (!tableMissing) {
-    return { success: true }
-  }
-
-  const createTableSQL = `
-    CREATE TABLE IF NOT EXISTS staff_locations (
-      id SERIAL PRIMARY KEY,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      staff_id INTEGER UNIQUE REFERENCES staff(id) ON DELETE CASCADE,
-      latitude DOUBLE PRECISION NOT NULL,
-      longitude DOUBLE PRECISION NOT NULL,
-      timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-    CREATE INDEX IF NOT EXISTS idx_staff_locations_staff_id ON staff_locations(staff_id);
-  `
-
-  const { error: createError } = await supabaseServer.rpc("exec_sql", { sql: createTableSQL })
-
-  if (createError) {
-    return { success: false, error: createError.message }
-  }
-
-  return { success: true }
-}
+const isMissingStaffLocationsTable = (error: { code?: string; message?: string } | null | undefined) =>
+  Boolean(
+    error &&
+      (error.code === "42P01" ||
+        error.code === "PGRST205" ||
+        (typeof error.message === "string" && error.message.includes("staff_locations"))),
+  )
 
 export async function POST(request: Request) {
   try {
@@ -56,13 +22,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Staff ID, latitude and longitude are required" }, { status: 400 })
     }
 
-    const ensureResult = await ensureStaffLocationsTable()
-    if (!ensureResult.success) {
-      return NextResponse.json({ error: ensureResult.error }, { status: 500 })
+    const { data: staff, error: staffError } = await supabaseServer
+      .from("staff")
+      .select("id, checkpoint_id")
+      .eq("id", staffId)
+      .maybeSingle()
+
+    if (staffError) {
+      console.error("Error fetching staff assignment:", staffError)
+      return NextResponse.json({ error: staffError.message }, { status: 500 })
+    }
+
+    if (!staff) {
+      return NextResponse.json({ error: "スタッフが見つかりません" }, { status: 404 })
+    }
+
+    if (!staff.checkpoint_id) {
+      return NextResponse.json({ error: "このスタッフには移動チェックポイントが割り当てられていません" }, { status: 400 })
     }
 
     const now = new Date().toISOString()
-    const { error } = await supabaseServer.from("staff_locations").upsert(
+    const { error: checkpointUpdateError } = await supabaseServer
+      .from("checkpoints")
+      .update({ latitude, longitude })
+      .eq("id", staff.checkpoint_id)
+
+    if (checkpointUpdateError) {
+      console.error("Error updating moving checkpoint position:", checkpointUpdateError)
+      return NextResponse.json({ error: checkpointUpdateError.message }, { status: 500 })
+    }
+
+    const { error: historyUpsertError } = await supabaseServer.from("staff_locations").upsert(
       [
         {
           staff_id: staffId,
@@ -75,12 +65,12 @@ export async function POST(request: Request) {
       { onConflict: "staff_id" },
     )
 
-    if (error) {
-      console.error("Error updating staff location:", error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (historyUpsertError && !isMissingStaffLocationsTable(historyUpsertError)) {
+      console.error("Error updating staff location history:", historyUpsertError)
+      return NextResponse.json({ error: historyUpsertError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, checkpointId: staff.checkpoint_id, savedHistory: !historyUpsertError })
   } catch (error) {
     console.error("Error in POST /api/staff-location:", error)
     return NextResponse.json({ error: "Failed to update staff location" }, { status: 500 })
