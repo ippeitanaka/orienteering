@@ -13,6 +13,7 @@ import AddPointsForm from "@/components/staff/add-points-form"
 import CheckpointManager from "@/components/staff/checkpoint-manager"
 import EventReport from "@/components/staff/event-report"
 import GameResetPanel from "@/components/staff/game-reset-panel"
+import RealtimeTab from "@/components/staff/realtime-tab"
 import StaffLocationTracker from "@/components/staff/staff-location-tracker"
 import TeamMapSettingsPanel from "@/components/staff/team-map-settings-panel"
 import TeamManager from "@/components/staff/team-manager"
@@ -174,6 +175,9 @@ export default function StaffDashboardPage() {
 
         <Tabs defaultValue="checkpoints" className="w-full">
           <TabsList className="mb-4 flex h-auto w-full items-stretch justify-start gap-2 overflow-x-auto rounded-md bg-muted/60 p-2 text-xs sm:mb-6 md:mb-8 sm:text-sm">
+            <TabsTrigger value="realtime" className="min-h-11 min-w-[120px] px-3 py-3">
+              リアルタイム
+            </TabsTrigger>
             <TabsTrigger value="checkpoints" className="min-h-11 min-w-[120px] px-3 py-3">
               チェックポイント
             </TabsTrigger>
@@ -196,6 +200,10 @@ export default function StaffDashboardPage() {
               レポート
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="realtime">
+            <RealtimeTab />
+          </TabsContent>
 
           <TabsContent value="checkpoints">
             <CheckpointManager />
