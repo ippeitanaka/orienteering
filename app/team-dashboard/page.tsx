@@ -57,7 +57,11 @@ export default function TeamDashboardPage() {
   const handleLogout = async () => {
     try {
       await fetch("/api/teams/logout", { method: "POST" })
-      router.push("/team-login")
+      localStorage.removeItem("teamId")
+      localStorage.removeItem("teamName")
+      localStorage.removeItem("teamCode")
+      localStorage.removeItem("teamAuthDeviceId")
+      router.push("/")
     } catch (err) {
       console.error("Logout error:", err)
     }
@@ -99,7 +103,7 @@ export default function TeamDashboardPage() {
       <header className="mb-8">
         <div className="mb-3 flex justify-end gap-2">
           <ThemeToggle />
-          <TeamHomeButton label="ゲームホーム" />
+          <TeamHomeButton href="/" label="ホームへ戻る" />
         </div>
         <h1 className="text-3xl font-bold mb-2">チームダッシュボード</h1>
         <div className="flex items-center justify-between">

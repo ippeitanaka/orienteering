@@ -247,12 +247,14 @@ export async function updateTeamLocation(
 }
 
 export async function getTeams(): Promise<Team[]> {
-  const { data, error } = await supabase.from("teams").select("*").order("total_score", { ascending: false })
-  if (error) {
-    console.error("Error fetching teams:", error)
-    throw error
+  const response = await fetch("/api/teams", { cache: "no-store" })
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error || "Failed to fetch teams")
   }
-  return data || []
+
+  return result.data || []
 }
 
 export async function getStaffMembers(): Promise<StaffMember[]> {

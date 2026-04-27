@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
+import { supabaseServer } from "@/lib/supabase-server"
 
 export async function GET() {
   try {
@@ -14,6 +14,7 @@ export async function GET() {
       // セッションCookieがない場合、他のCookieをチェック
       const staffId = cookieStore.get("staff_id")
       const staffName = cookieStore.get("staff_name")
+      const staffCheckpointId = cookieStore.get("staff_checkpoint_id")
 
       console.log("Alternative cookies:", { staffId: !!staffId, staffName: !!staffName })
 
@@ -26,7 +27,7 @@ export async function GET() {
           staff: {
             id: staffId.value,
             name: staffName.value,
-            checkpoint_id: null,
+            checkpoint_id: staffCheckpointId?.value ? Number(staffCheckpointId.value) : null,
           },
           source: "backup_cookies",
         })
@@ -37,17 +38,27 @@ export async function GET() {
 
     try {
       const session = JSON.parse(staffSession.value)
-      const { staff_id, staff_name } = session
+      const { staff_id, staff_name, checkpoint_id } = session
 
-      console.log("パースしたセッション:", { staff_id, staff_name })
+      console.log("パースしたセッション:", { staff_id, staff_name, checkpoint_id })
 
       if (!staff_id) {
         return NextResponse.json({ authenticated: false, error: "無効なセッション" }, { status: 401 })
       }
 
-      // Supabaseでスタッフ情報を確認
-      const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-      const { data: staff, error } = await supabase.from("staff").select("*").eq("id", staff_id).single()
+      if (!supabaseServer) {
+        return NextResponse.json({
+          authenticated: true,
+          staff: {
+            id: staff_id,
+            name: staff_name,
+            checkpoint_id: checkpoint_id ?? null,
+          },
+          source: "session_without_db",
+        })
+      }
+
+      const { data: staff, error } = await supabaseServer.from("staff").select("id, name, checkpoint_id").eq("id", staff_id).maybeSingle()
 
       if (error) {
         console.log("Supabaseスタッフ情報取得エラー:", error)
@@ -58,7 +69,7 @@ export async function GET() {
           staff: {
             id: staff_id,
             name: staff_name,
-            checkpoint_id: null,
+            checkpoint_id: checkpoint_id ?? null,
           },
           source: "session_only",
         })
@@ -73,7 +84,7 @@ export async function GET() {
           staff: {
             id: staff_id,
             name: staff_name,
-            checkpoint_id: null,
+            checkpoint_id: checkpoint_id ?? null,
           },
           source: "session_fallback",
         })

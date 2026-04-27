@@ -7,6 +7,7 @@ export async function POST() {
     cookies().delete("staff_session")
     cookies().delete("staff_id")
     cookies().delete("staff_name")
+    cookies().delete("staff_checkpoint_id")
 
     return NextResponse.json({ success: true, message: "ログアウトしました" })
   } catch (error) {

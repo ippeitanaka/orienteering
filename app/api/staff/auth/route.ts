@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       const sessionData = {
         staff_id: 999,
         staff_name: "Admin",
+        checkpoint_id: null,
       }
 
       // Cookieを設定
@@ -75,6 +76,14 @@ export async function POST(request: Request) {
         sameSite: "lax",
         path: "/",
         maxAge: 60 * 60 * 24 * 7, // 1週間
+      })
+
+      cookies().set("staff_checkpoint_id", "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
       })
 
       cookies().set("staff_session", JSON.stringify(sessionData), {
@@ -110,6 +119,7 @@ export async function POST(request: Request) {
     const sessionData = {
       staff_id: staff.id,
       staff_name: staff.name,
+      checkpoint_id: staff.checkpoint_id ?? null,
     }
 
     // Cookieを設定
@@ -127,6 +137,14 @@ export async function POST(request: Request) {
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 1週間
+    })
+
+    cookies().set("staff_checkpoint_id", staff.checkpoint_id ? String(staff.checkpoint_id) : "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
     })
 
     cookies().set("staff_session", JSON.stringify(sessionData), {
