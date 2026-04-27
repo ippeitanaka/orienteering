@@ -2,12 +2,17 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import ThemeToggle from "@/components/theme-toggle"
 
 export default function Home() {
   return (
     <div className="min-h-screen elt-bg">
       <div className="elt-container">
-        <header className="text-center mb-8 py-4 sm:mb-12 sm:py-8">
+        <header className="mb-8 py-4 sm:mb-12 sm:py-8">
+          <div className="mb-4 flex justify-end">
+            <ThemeToggle />
+          </div>
+          <div className="text-center">
           <div className="flex justify-center mb-4 sm:mb-6">
             <Image
               src="/images/elt-logo.png"
@@ -19,6 +24,7 @@ export default function Home() {
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">学外オリエンテーション</h1>
           <p className="text-muted-foreground text-sm sm:text-base">東洋医療専門学校　救急救命士学科</p>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto mb-8 sm:mb-12">

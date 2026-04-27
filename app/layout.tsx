@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { BIZ_UDGothic } from "next/font/google"
 import { Roboto_Mono } from "next/font/google"
 import { Oswald } from "next/font/google"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 import "leaflet/dist/leaflet.css"
 
@@ -38,8 +39,12 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ja" className="dark">
-      <body className={`${bizUdGothic.variable} ${oswald.variable} ${robotoMono.variable} elt-bg`}>{children}</body>
+    <html lang="ja" suppressHydrationWarning>
+      <body className={`${bizUdGothic.variable} ${oswald.variable} ${robotoMono.variable}`}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

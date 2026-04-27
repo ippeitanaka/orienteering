@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
   team_location_update_interval_seconds: 180,
   team_map_auto_refresh_enabled: true,
   team_map_refresh_interval_seconds: 180,
+  team_scoreboard_visible: true,
 }
 
 const isTeamMapSettingsTableMissing = (error: { code?: string; message?: string } | null | undefined) =>
@@ -17,8 +18,19 @@ const isTeamMapSettingsTableMissing = (error: { code?: string; message?: string 
         (typeof error.message === "string" && error.message.includes("team_map_settings"))),
   )
 
+  const isMissingScoreboardVisibilityColumn = (error: { code?: string; message?: string } | null | undefined) =>
+    Boolean(
+      error &&
+        (error.code === "42703" ||
+          error.code === "PGRST204" ||
+          (typeof error.message === "string" && error.message.includes("team_scoreboard_visible"))),
+    )
+
   const TEAM_MAP_SETTINGS_SETUP_MESSAGE =
     "team_map_settings テーブルが未作成です。Supabase SQL Editor で scripts/add-team-map-settings-table.sql もしくは scripts/create-tables.sql を実行してください。"
+
+  const TEAM_SCOREBOARD_VISIBILITY_SETUP_MESSAGE =
+    "順位表示設定カラムが未作成です。Supabase SQL Editor で scripts/add-team-scoreboard-visibility-column.sql を実行してください。"
 
 async function isStaffAuthenticated() {
   const cookieStore = await cookies()
@@ -135,6 +147,7 @@ export async function PUT(request: Request) {
       team_location_update_interval_seconds: Number(body?.team_location_update_interval_seconds ?? DEFAULT_SETTINGS.team_location_update_interval_seconds),
       team_map_auto_refresh_enabled: body?.team_map_auto_refresh_enabled !== false,
       team_map_refresh_interval_seconds: Number(body?.team_map_refresh_interval_seconds ?? DEFAULT_SETTINGS.team_map_refresh_interval_seconds),
+      team_scoreboard_visible: body?.team_scoreboard_visible !== false,
       updated_at: new Date().toISOString(),
     }
 
@@ -157,6 +170,10 @@ export async function PUT(request: Request) {
       .maybeSingle()
 
     if (error) {
+      if (isMissingScoreboardVisibilityColumn(error)) {
+        return NextResponse.json({ error: TEAM_SCOREBOARD_VISIBILITY_SETUP_MESSAGE, success: false }, { status: 503 })
+      }
+
       console.error("Failed to update team map settings:", error)
       return NextResponse.json({ error: error.message, success: false }, { status: 500 })
     }

@@ -16,6 +16,7 @@ import Scoreboard from "@/components/scoreboard"
 import dynamic from "next/dynamic"
 import SimpleFallbackMap from "@/components/simple-fallback-map"
 import CountdownTimer from "@/components/countdown-timer"
+import ThemeToggle from "@/components/theme-toggle"
 import { calculateDistanceMeters, formatDistance } from "@/lib/utils"
 
 // BasicMapをクライアントサイドのみで読み込む
@@ -227,6 +228,10 @@ export default function Dashboard() {
             <h1 className="text-lg sm:text-xl font-bold font-heading leading-tight">学外オリエンテーション</h1>
           </div>
           <div className="flex items-center justify-end gap-2 sm:gap-3">
+            <ThemeToggle
+              variant="ghost"
+              className="h-10 px-3 text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
+            />
             <Link href="/help/maps-api">
               <Button
                 variant="ghost"
@@ -351,7 +356,7 @@ export default function Dashboard() {
                 </TabsContent>
 
                 <TabsContent value="score" className="p-3 sm:p-4 slide-in">
-                  <Scoreboard />
+                  <Scoreboard variant="team" selectedTeamId={selectedTeam?.id ?? null} />
                 </TabsContent>
               </Tabs>
             </Card>

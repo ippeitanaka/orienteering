@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import TeamHomeButton from "@/components/team-home-button"
+import ThemeToggle from "@/components/theme-toggle"
 
 export default function TeamDashboardPage() {
   const [team, setTeam] = useState<any>(null)
@@ -96,7 +97,8 @@ export default function TeamDashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex justify-end gap-2">
+          <ThemeToggle />
           <TeamHomeButton label="ゲームホーム" />
         </div>
         <h1 className="text-3xl font-bold mb-2">チームダッシュボード</h1>

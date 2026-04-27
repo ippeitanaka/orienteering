@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS: TeamMapSettings = {
   team_location_update_interval_seconds: 180,
   team_map_auto_refresh_enabled: true,
   team_map_refresh_interval_seconds: 180,
+  team_scoreboard_visible: true,
 }
 
 export default function TeamMapSettingsPanel() {
@@ -155,6 +156,25 @@ export default function TeamMapSettingsPanel() {
                     ...prev,
                     team_map_refresh_interval_seconds: Number(event.target.value),
                   }))
+                }
+                disabled={loading || saving}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-4 space-y-4 lg:col-span-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <Label htmlFor="team-scoreboard-visible" className="font-medium">
+                  チーム画面の順位表示
+                </Label>
+                <p className="text-xs text-muted-foreground">OFF にすると、チーム画面のスコアタブでは「順位非表示中」とだけ表示されます。</p>
+              </div>
+              <Switch
+                id="team-scoreboard-visible"
+                checked={settings.team_scoreboard_visible}
+                onCheckedChange={(checked) =>
+                  setSettings((prev) => ({ ...prev, team_scoreboard_visible: checked }))
                 }
                 disabled={loading || saving}
               />

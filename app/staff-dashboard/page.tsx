@@ -17,6 +17,7 @@ import RealtimeTab from "@/components/staff/realtime-tab"
 import StaffLocationTracker from "@/components/staff/staff-location-tracker"
 import TeamMapSettingsPanel from "@/components/staff/team-map-settings-panel"
 import TeamManager from "@/components/staff/team-manager"
+import ThemeToggle from "@/components/theme-toggle"
 import { getTeams, type Team } from "@/lib/supabase"
 
 export default function StaffDashboardPage() {
@@ -157,15 +158,18 @@ export default function StaffDashboardPage() {
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
-            >
-              <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>ログアウト</span>
-            </Button>
+            <div className="flex items-center gap-2 self-stretch sm:self-auto">
+              <ThemeToggle className="flex items-center gap-2 text-xs sm:text-sm whitespace-nowrap" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+              >
+                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>ログアウト</span>
+              </Button>
+            </div>
           </div>
         </header>
 

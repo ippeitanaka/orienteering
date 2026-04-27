@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Hash } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import ThemeToggle from "@/components/theme-toggle"
 
 function TeamLoginContent() {
   const [teamCode, setTeamCode] = useState("")
@@ -89,10 +90,13 @@ function TeamLoginContent() {
     <div className="elt-bg min-h-screen">
       <div className="elt-container">
         <div className="max-w-md mx-auto">
-          <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 sm:mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            ホームに戻る
-          </Link>
+          <div className="mb-4 flex items-center justify-between gap-2 sm:mb-6">
+            <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              ホームに戻る
+            </Link>
+            <ThemeToggle />
+          </div>
 
           <Card className="elt-card">
             <CardHeader>

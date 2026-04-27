@@ -25,6 +25,7 @@ export default function CheckpointCheckinPanel({
   team,
   alreadyCheckedIn,
 }: CheckpointCheckinPanelProps) {
+  const isFinishCheckpoint = checkpointId === 1
   const [checkedIn, setCheckedIn] = useState(alreadyCheckedIn)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ type: "success" | "error" | "info"; message: string } | null>(
@@ -101,8 +102,8 @@ export default function CheckpointCheckinPanel({
           </div>
           <div className="rounded-2xl bg-amber-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">Award</p>
-            <p className="mt-2 text-lg font-bold">+{pointValue} pt</p>
-            <p className="text-sm text-amber-800">初回チェックイン時のみ加算</p>
+            <p className="mt-2 text-lg font-bold">{isFinishCheckpoint ? `+${pointValue} pt + タイム補正` : `+${pointValue} pt`}</p>
+            <p className="text-sm text-amber-800">{isFinishCheckpoint ? "残り時間ボーナスは到達率に応じて補正、超過は減点" : "初回チェックイン時のみ加算"}</p>
           </div>
           <div className="rounded-2xl bg-emerald-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Team Score</p>
@@ -153,7 +154,9 @@ export default function CheckpointCheckinPanel({
             <div className="rounded-3xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 p-5 shadow-lg shadow-amber-100/80">
               <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-amber-900">ここを押してチェックイン</p>
               <p className="mt-2 text-sm leading-6 text-zinc-700">
-                ページ内容を確認したら、下の大きなボタンを押してください。押した後は合計ポイントが増えているか確認してください。
+                {isFinishCheckpoint
+                  ? "ゴールする場合は下のボタンを押してください。スタート地点ポイントに加えて、残り時間ボーナスはチェックポイント到達率に応じて反映され、時間超過は減点されます。"
+                  : "ページ内容を確認したら、下の大きなボタンを押してください。押した後は合計ポイントが増えているか確認してください。"}
               </p>
               <Button
                 onClick={() => void handleCheckin()}
@@ -166,9 +169,19 @@ export default function CheckpointCheckinPanel({
                 } disabled:animate-none disabled:opacity-100`}
               >
                 <Sparkles className="h-6 w-6" />
-                {checkedIn ? "チェックイン済み" : loading ? "チェックイン中..." : `${pointValue}ポイントを獲得してチェックイン`}
+                {checkedIn
+                  ? "チェックイン済み"
+                  : loading
+                    ? "チェックイン中..."
+                    : isFinishCheckpoint
+                      ? "ゴールしてタイムポイントを確定"
+                      : `${pointValue}ポイントを獲得してチェックイン`}
               </Button>
-              <p className="mt-3 text-sm text-zinc-600">1 チームにつきこのチェックポイントでの加算は 1 回のみです。</p>
+              <p className="mt-3 text-sm text-zinc-600">
+                {isFinishCheckpoint
+                  ? "1 チームにつきゴール判定は 1 回のみです。"
+                  : "1 チームにつきこのチェックポイントでの加算は 1 回のみです。"}
+              </p>
             </div>
           </>
         )}

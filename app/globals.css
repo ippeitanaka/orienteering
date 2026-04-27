@@ -24,6 +24,11 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
     --radius: 0.5rem;
+    --elt-grid-line: rgba(15, 23, 42, 0.08);
+    --elt-grid-glow: hsl(var(--primary) / 0.06);
+    --scrollbar-track: rgba(15, 23, 42, 0.08);
+    --scrollbar-thumb: rgba(15, 23, 42, 0.22);
+    --scrollbar-thumb-hover: rgba(15, 23, 42, 0.32);
   }
 
   .dark {
@@ -46,6 +51,11 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+    --elt-grid-line: rgba(255, 255, 255, 0.04);
+    --elt-grid-glow: hsl(var(--primary) / 0.1);
+    --scrollbar-track: rgba(255, 255, 255, 0.1);
+    --scrollbar-thumb: rgba(255, 255, 255, 0.28);
+    --scrollbar-thumb-hover: rgba(255, 255, 255, 0.42);
   }
 }
 
@@ -99,15 +109,15 @@
   }
 
   .elt-card {
-    @apply border-zinc-800 bg-zinc-900 text-white;
+    @apply border-border bg-card text-card-foreground shadow-sm;
   }
 
   .elt-button {
-    @apply bg-white text-black hover:bg-gray-200;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
 
   .elt-input {
-    @apply bg-zinc-800 border-zinc-700 text-white;
+    @apply border-border bg-background text-foreground;
   }
 
   .elt-badge {
@@ -149,8 +159,10 @@
   }
 
   .elt-bg {
-    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-color: hsl(var(--background));
+    background-image: radial-gradient(circle at top, var(--elt-grid-glow), transparent 55%),
+      linear-gradient(to right, var(--elt-grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--elt-grid-line) 1px, transparent 1px);
     background-size: 20px 20px;
   }
 
@@ -172,15 +184,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--scrollbar-thumb);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* アニメーション効果 */

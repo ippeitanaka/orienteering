@@ -171,6 +171,7 @@ export interface TeamMapSettings {
   team_location_update_interval_seconds: number
   team_map_auto_refresh_enabled: boolean
   team_map_refresh_interval_seconds: number
+  team_scoreboard_visible: boolean
   updated_at?: string
 }
 

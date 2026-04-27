@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { supabaseServer } from "@/lib/supabase-server"
 
-const LOCK_TIMEOUT_MINUTES = 10
+const FINISH_CHECKPOINT_ID = 1
 
 const normalizePointValue = (value: unknown) => {
   if (typeof value === "number") {
@@ -35,15 +35,6 @@ const isMissingRpcFunction = (error: { code?: string; message?: string } | null)
   )
 }
 
-const isTeamLockTableMissing = (error: { code?: string; message?: string } | null | undefined) => {
-  if (!error) return false
-  return (
-    error.code === "42P01" ||
-    error.code === "PGRST205" ||
-    (typeof error.message === "string" && error.message.includes("team_location_locks"))
-  )
-}
-
 const shouldFallbackFromRpcError = (error: { code?: string; details?: string | null; message?: string } | null) => {
   if (!error) return false
   if (isMissingRpcFunction(error)) return true
@@ -52,6 +43,123 @@ const shouldFallbackFromRpcError = (error: { code?: string; details?: string | n
   const message = typeof error.message === "string" ? error.message.toLowerCase() : ""
 
   return error.code === "42702" && (details.includes("total_score") || message.includes('"total_score" is ambiguous'))
+}
+
+const getLatestTimerSettings = async () => {
+  if (!supabaseServer) {
+    return { data: null, error: new Error("Database connection not available") }
+  }
+
+  const result = await supabaseServer
+    .from("timer_settings")
+    .select("duration, end_time, is_running")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const tableMissing =
+    result.error?.code === "42P01" ||
+    result.error?.code === "PGRST205" ||
+    (typeof result.error?.message === "string" && result.error.message.includes("timer_settings"))
+
+  if (tableMissing) {
+    return { data: null, error: null }
+  }
+
+  return result
+}
+
+const getFinishProgressRatio = async (teamId: number) => {
+  if (!supabaseServer) {
+    return { ratio: 1, completedCount: 0, totalCount: 0, error: new Error("Database connection not available") }
+  }
+
+  const [checkpointResult, checkinResult] = await Promise.all([
+    supabaseServer.from("checkpoints").select("id, is_checkpoint").neq("id", FINISH_CHECKPOINT_ID),
+    supabaseServer.from("checkins").select("checkpoint_id").eq("team_id", teamId).neq("checkpoint_id", FINISH_CHECKPOINT_ID),
+  ])
+
+  if (checkpointResult.error) {
+    return { ratio: 1, completedCount: 0, totalCount: 0, error: checkpointResult.error }
+  }
+
+  if (checkinResult.error) {
+    return { ratio: 1, completedCount: 0, totalCount: 0, error: checkinResult.error }
+  }
+
+  const activeCheckpointIds = new Set(
+    (checkpointResult.data || []).filter((checkpoint) => checkpoint.is_checkpoint !== false).map((checkpoint) => checkpoint.id),
+  )
+
+  const totalCount = activeCheckpointIds.size
+  if (totalCount === 0) {
+    return { ratio: 1, completedCount: 0, totalCount: 0, error: null }
+  }
+
+  const completedCount = new Set(
+    (checkinResult.data || []).map((checkin) => checkin.checkpoint_id).filter((checkpointId) => activeCheckpointIds.has(checkpointId)),
+  ).size
+
+  return {
+    ratio: completedCount / totalCount,
+    completedCount,
+    totalCount,
+    error: null,
+  }
+}
+
+const calculateFinishTimeAdjustment = async (teamId: number) => {
+  const { data, error } = await getLatestTimerSettings()
+
+  if (error) {
+    return { points: 0, message: null, error, ratio: 1, completedCount: 0, totalCount: 0 }
+  }
+
+  if (!data?.end_time) {
+    return { points: 0, message: null, error: null, ratio: 1, completedCount: 0, totalCount: 0 }
+  }
+
+  const progress = await getFinishProgressRatio(teamId)
+  if (progress.error) {
+    return {
+      points: 0,
+      message: null,
+      error: progress.error,
+      ratio: progress.ratio,
+      completedCount: progress.completedCount,
+      totalCount: progress.totalCount,
+    }
+  }
+
+  const diffSeconds = Math.floor((new Date(data.end_time).getTime() - Date.now()) / 1000)
+
+  if (diffSeconds >= 0) {
+    const rawBonusPoints = Math.floor(diffSeconds / 60)
+    const scaledBonusPoints = Math.floor(rawBonusPoints * progress.ratio)
+    return {
+      points: scaledBonusPoints,
+      message:
+        rawBonusPoints > 0
+          ? `残り時間ボーナス ${scaledBonusPoints}ポイント（${progress.completedCount}/${progress.totalCount}達成）`
+          : null,
+      error: null,
+      ratio: progress.ratio,
+      completedCount: progress.completedCount,
+      totalCount: progress.totalCount,
+    }
+  }
+
+  const penaltyMinutes = Math.ceil(Math.abs(diffSeconds) / 60)
+  const penaltyPoints = penaltyMinutes * 2
+
+  return {
+    points: -penaltyPoints,
+    message: `時間超過により ${penaltyPoints}ポイント減算`,
+    error: null,
+    ratio: progress.ratio,
+    completedCount: progress.completedCount,
+    totalCount: progress.totalCount,
+  }
 }
 
 const resolveCheckpointByToken = async (token: string) => {
@@ -101,7 +209,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "チームログインが必要です" }, { status: 401 })
     }
 
-    let session: { team_id?: number; device_id?: string } | null = null
+    let session: { team_id?: number; device_id?: string | null } | null = null
     try {
       session = JSON.parse(sessionCookie.value)
     } catch {
@@ -111,10 +219,6 @@ export async function POST(request: Request) {
     const teamId = session?.team_id
     if (!teamId) {
       return NextResponse.json({ error: "有効なチームセッションではありません" }, { status: 401 })
-    }
-
-    if (!session?.device_id) {
-      return NextResponse.json({ error: "端末認証情報が不足しています。再度チームログインしてください。" }, { status: 401 })
     }
 
     const body = await request.json()
@@ -143,47 +247,81 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "チェックポイントが見つかりません" }, { status: 404 })
     }
 
-    const { data: existingLock, error: lockError } = await supabaseServer
-      .from("team_location_locks")
-      .select("team_id, device_id, last_seen")
-      .eq("team_id", team.id)
-      .maybeSingle()
+    if (checkpoint.id === FINISH_CHECKPOINT_ID) {
+      const existingCheckin = await supabaseServer
+        .from("checkins")
+        .select("id")
+        .eq("team_id", team.id)
+        .eq("checkpoint_id", checkpoint.id)
+        .maybeSingle()
 
-    const lockTableMissing = isTeamLockTableMissing(lockError)
-    if (lockError && !lockTableMissing) {
-      console.error("Error fetching team device lock during checkin:", lockError)
-      return NextResponse.json({ error: "端末認証の確認に失敗しました" }, { status: 500 })
-    }
+      if (existingCheckin.error && existingCheckin.error.code !== "PGRST116") {
+        console.error("Error checking finish checkpoint state:", existingCheckin.error)
+        return NextResponse.json({ error: "ゴール判定の確認に失敗しました" }, { status: 500 })
+      }
 
-    if (!lockTableMissing && existingLock) {
-      const isSameDevice = existingLock.device_id === session.device_id
-      const lockExpiredAt = new Date(Date.now() - LOCK_TIMEOUT_MINUTES * 60 * 1000)
-      const isExpired = new Date(existingLock.last_seen) < lockExpiredAt
-
-      if (!isSameDevice && !isExpired) {
+      if (existingCheckin.data) {
         return NextResponse.json(
           {
-            error: "このチームは別の端末で利用中です。QRコードの読み取りは1端末のみ利用できます。",
-            code: "DEVICE_LOCKED",
+            success: false,
+            alreadyCheckedIn: true,
+            checkpoint: { id: checkpoint.id, name: checkpoint.name },
+            team: { id: team.id, name: team.name, total_score: team.total_score },
+            message: "このチームはすでにゴール済みです",
           },
           { status: 409 },
         )
       }
 
-      const refreshedAt = new Date().toISOString()
-      const { error: updateLockError } = await supabaseServer
-        .from("team_location_locks")
-        .update({
-          device_id: session.device_id,
-          last_seen: refreshedAt,
-          updated_at: refreshedAt,
-        })
-        .eq("team_id", team.id)
-
-      if (updateLockError) {
-        console.error("Error refreshing team device lock during checkin:", updateLockError)
-        return NextResponse.json({ error: "端末認証の更新に失敗しました" }, { status: 500 })
+      const timeAdjustment = await calculateFinishTimeAdjustment(team.id)
+      if (timeAdjustment.error) {
+        console.error("Error calculating finish time adjustment:", timeAdjustment.error)
+        return NextResponse.json({ error: "タイムポイントの計算に失敗しました" }, { status: 500 })
       }
+
+      const insertCheckin = await supabaseServer.from("checkins").insert([{ team_id: team.id, checkpoint_id: checkpoint.id }])
+
+      if (insertCheckin.error) {
+        if (insertCheckin.error.code === "23505") {
+          return NextResponse.json(
+            {
+              success: false,
+              alreadyCheckedIn: true,
+              checkpoint: { id: checkpoint.id, name: checkpoint.name },
+              team: { id: team.id, name: team.name, total_score: team.total_score },
+              message: "このチームはすでにゴール済みです",
+            },
+            { status: 409 },
+          )
+        }
+
+        console.error("Error inserting finish checkin:", insertCheckin.error)
+        return NextResponse.json({ error: "ゴール登録に失敗しました" }, { status: 500 })
+      }
+
+      const checkpointPoints = normalizePointValue(checkpoint.point_value)
+      const totalAwardedPoints = checkpointPoints + timeAdjustment.points
+      const updatedScore = (team.total_score || 0) + totalAwardedPoints
+      const updateScore = await supabaseServer.from("teams").update({ total_score: updatedScore }).eq("id", team.id)
+
+      if (updateScore.error) {
+        await supabaseServer.from("checkins").delete().eq("team_id", team.id).eq("checkpoint_id", checkpoint.id)
+        console.error("Error updating finish score:", updateScore.error)
+        return NextResponse.json({ error: "ゴール時のポイント更新に失敗しました" }, { status: 500 })
+      }
+
+      const messageParts = [`${checkpointPoints}ポイントを加算しました`]
+      if (timeAdjustment.message) {
+        messageParts.push(timeAdjustment.message)
+      }
+
+      return NextResponse.json({
+        success: true,
+        awardedPoints: totalAwardedPoints,
+        checkpoint: { id: checkpoint.id, name: checkpoint.name },
+        team: { id: team.id, name: team.name, total_score: updatedScore },
+        message: messageParts.join(" / "),
+      })
     }
 
     const rpcResult = await supabaseServer.rpc("team_checkpoint_checkin", {
