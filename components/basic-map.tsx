@@ -582,21 +582,21 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
               <div style="
                 background-color: ${team.color}; 
                 color: white; 
-                padding: 2px 6px; 
-                border-radius: 10px; 
-                font-size: 11px; 
+                padding: 1px 4px; 
+                border-radius: 6px; 
+                font-size: 6px; 
                 font-weight: bold;
                 white-space: nowrap;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-                transform: translateY(-18px);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+                transform: translateY(-10px);
                 text-shadow: 0px 1px 1px rgba(0,0,0,0.4);
                 border: 1px solid white;
               ">
                 ${team.name}
               </div>
             `,
-              iconSize: [100, 20],
-              iconAnchor: [50, 0],
+              iconSize: [52, 12],
+              iconAnchor: [26, 0],
             }),
             interactive: false, // ラベルはクリックできないように
             zIndexOffset: 1000, // 他のマーカーより前面に表示

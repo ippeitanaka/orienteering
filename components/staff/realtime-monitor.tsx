@@ -285,20 +285,20 @@ export default function RealtimeMonitor() {
           className: "staff-realtime-team-label",
           html: `
             <div style="
-              transform: translateY(-18px);
+              transform: translateY(-10px);
               background: rgba(15, 23, 42, 0.82);
               color: white;
               border-radius: 999px;
-              padding: 2px 8px;
-              font-size: 11px;
+              padding: 1px 5px;
+              font-size: 6px;
               font-weight: 700;
               white-space: nowrap;
               border: 1px solid rgba(255,255,255,0.5);
-              box-shadow: 0 4px 12px rgba(15,23,42,0.18);
+              box-shadow: 0 2px 6px rgba(15,23,42,0.18);
             ">${team.name}</div>
           `,
-          iconSize: [96, 20],
-          iconAnchor: [48, 0],
+          iconSize: [50, 12],
+          iconAnchor: [25, 0],
         }),
         interactive: false,
         zIndexOffset: 1000,
