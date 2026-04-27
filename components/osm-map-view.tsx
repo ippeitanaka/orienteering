@@ -177,17 +177,17 @@ export default function OSMMapView({ teams }: OSMMapViewProps) {
           html: `
     <div style="
       background-color: ${team.color}; 
-      width: 18px; 
-      height: 18px; 
+      width: 9px; 
+      height: 9px; 
       border-radius: 50%; 
-      border: 3px solid white; 
-      box-shadow: 0 0 6px rgba(0,0,0,0.5), inset 0 0 2px rgba(255,255,255,0.5);
+      border: 1.5px solid white; 
+      box-shadow: 0 0 3px rgba(0,0,0,0.4), inset 0 0 1px rgba(255,255,255,0.5);
       transform-origin: center;
       animation: pulse 2s infinite ease-in-out;
     "></div>
   `,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          iconSize: [12, 12],
+          iconAnchor: [6, 6],
         })
 
         const marker = window.L.marker([location.latitude, location.longitude], { icon })

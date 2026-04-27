@@ -255,16 +255,16 @@ export default function RealtimeMonitor() {
         className: "staff-realtime-team-marker",
         html: `
           <div style="
-            width: 18px;
-            height: 18px;
+            width: 9px;
+            height: 9px;
             border-radius: 999px;
             background: ${team.color};
-            border: 3px solid white;
-            box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.18), 0 8px 18px rgba(15, 23, 42, 0.25);
+            border: 1.5px solid white;
+            box-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.18), 0 4px 9px rgba(15, 23, 42, 0.25);
           "></div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
       })
 
       const marker = L.marker([location.latitude, location.longitude], { icon })

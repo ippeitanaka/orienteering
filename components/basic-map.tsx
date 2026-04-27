@@ -548,15 +548,15 @@ export default function BasicMap({ teams, onError }: BasicMapProps) {
               html: `
               <div style="
                 background-color: ${team.color}; 
-                width: 16px; 
-                height: 16px; 
+                width: 8px; 
+                height: 8px; 
                 border-radius: 50%; 
-                border: 2px solid white; 
-                box-shadow: 0 0 4px rgba(0,0,0,0.4);
+                border: 1.5px solid white; 
+                box-shadow: 0 0 2px rgba(0,0,0,0.35);
               "></div>
             `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10],
+              iconSize: [10, 10],
+              iconAnchor: [5, 5],
             })
 
             const marker = window.L.marker([location.latitude, location.longitude], { icon })

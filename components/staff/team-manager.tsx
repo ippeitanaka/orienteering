@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertCircle, Edit, Trash, Plus, RefreshCw } from "lucide-react"
@@ -10,12 +11,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import TeamForm from "@/components/staff/team-form"
 import { getTeams, type Team } from "@/lib/supabase"
 
+type TeamSortOrder = "id-asc" | "id-desc" | "score-desc" | "score-asc"
+
 interface TeamManagerProps {
   onTeamsChanged?: () => void
 }
 
 export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
   const [teams, setTeams] = useState<Team[]>([])
+  const [sortOrder, setSortOrder] = useState<TeamSortOrder>("id-asc")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false)
@@ -83,6 +87,26 @@ export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
     setRefreshTrigger((prev) => prev + 1) // 再取得をトリガー
   }
 
+  const sortedTeams = useMemo(() => {
+    const nextTeams = [...teams]
+
+    nextTeams.sort((left, right) => {
+      switch (sortOrder) {
+        case "id-desc":
+          return right.id - left.id
+        case "score-desc":
+          return right.total_score - left.total_score || left.id - right.id
+        case "score-asc":
+          return left.total_score - right.total_score || left.id - right.id
+        case "id-asc":
+        default:
+          return left.id - right.id
+      }
+    })
+
+    return nextTeams
+  }, [teams, sortOrder])
+
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -91,6 +115,17 @@ export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
           <CardDescription>チームの作成、編集、削除を行います</CardDescription>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as TeamSortOrder)}>
+            <SelectTrigger className="min-h-11 w-full sm:w-[180px]">
+              <SelectValue placeholder="並び順" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="id-asc">チームID順</SelectItem>
+              <SelectItem value="id-desc">チームID逆順</SelectItem>
+              <SelectItem value="score-desc">スコア高い順</SelectItem>
+              <SelectItem value="score-asc">スコア低い順</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" className="min-h-11" onClick={() => setRefreshTrigger((prev) => prev + 1)}>
             <RefreshCw className="h-4 w-4 mr-1" />
             更新
@@ -128,14 +163,14 @@ export default function TeamManager({ onTeamsChanged }: TeamManagerProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teams.length === 0 ? (
+                {sortedTeams.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
                       チームがありません
                     </TableCell>
                   </TableRow>
                 ) : (
-                  teams.map((team) => (
+                  sortedTeams.map((team) => (
                     <TableRow key={team.id} className="min-w-[760px]">
                       <TableCell>{team.id}</TableCell>
                       <TableCell className="font-medium">{team.name}</TableCell>
