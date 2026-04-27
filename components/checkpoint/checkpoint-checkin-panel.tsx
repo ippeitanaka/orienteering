@@ -252,9 +252,7 @@ export default function CheckpointCheckinPanel({
                   ? "チェックイン済み"
                   : loading
                     ? "チェックイン中..."
-                    : isFinishCheckpoint
-                      ? "ゴールしてタイムポイントを確定"
-                      : `${pointValue}ポイントを獲得してチェックイン`}
+                    : "チェックイン"}
               </Button>
               <p className="mt-3 text-sm text-zinc-600">
                 {isFinishCheckpoint
