@@ -1,22 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Camera, QrCode, ScanLine } from "lucide-react"
+import QrScanner from "qr-scanner"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-type BarcodeLike = {
-  rawValue?: string
-}
-
-type BarcodeDetectorInstance = {
-  detect: (source: ImageBitmapSource) => Promise<BarcodeLike[]>
-}
-
-type BarcodeDetectorConstructor = {
-  new (options?: { formats?: string[] }): BarcodeDetectorInstance
-}
 
 const resolveCheckpointPath = (value: string) => {
   const trimmed = value.trim()
@@ -49,36 +38,18 @@ const resolveCheckpointPath = (value: string) => {
 export default function TeamQrScanner() {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const frameRef = useRef<number | null>(null)
-  const scanningRef = useRef(false)
+  const scannerRef = useRef<QrScanner | null>(null)
 
   const [open, setOpen] = useState(false)
-  const [supported, setSupported] = useState(false)
+  const [supported, setSupported] = useState<boolean | null>(null)
   const [status, setStatus] = useState("カメラを起動すると、その場でチェックポイント QR を読み取れます。")
   const [isStarting, setIsStarting] = useState(false)
-
-  const detectorConstructor = useMemo(() => {
-    if (typeof window === "undefined") {
-      return null
-    }
-
-    return (window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }).BarcodeDetector ?? null
-  }, [])
-
-  useEffect(() => {
-    setSupported(Boolean(detectorConstructor && navigator.mediaDevices?.getUserMedia))
-  }, [detectorConstructor])
 
   useEffect(() => {
     if (!open) {
       stopScanner()
+      setSupported(null)
       setStatus("カメラを起動すると、その場でチェックポイント QR を読み取れます。")
-      return
-    }
-
-    if (!detectorConstructor || !navigator.mediaDevices?.getUserMedia) {
-      setStatus("この端末のブラウザではアプリ内 QR 読み取りに対応していません。標準カメラから QR を開いてください。")
       return
     }
 
@@ -89,31 +60,56 @@ export default function TeamQrScanner() {
         setIsStarting(true)
         setStatus("カメラを起動しています...")
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: "environment" },
-          },
-          audio: false,
-        })
-
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop())
+        const hasCamera = await QrScanner.hasCamera()
+        if (!hasCamera) {
+          setSupported(false)
+          setStatus("この端末ではカメラが利用できません。標準カメラから QR を開いてください。")
           return
         }
 
-        streamRef.current = stream
         const video = videoRef.current
         if (!video) {
           return
         }
 
-        video.srcObject = stream
-        await video.play()
+        const scanner = new QrScanner(
+          video,
+          (result) => {
+            const matched = resolveCheckpointPath(result.data)
+            if (!matched) {
+              return
+            }
 
+            stopScanner()
+            setOpen(false)
+            router.push(matched)
+          },
+          {
+            preferredCamera: "environment",
+            returnDetailedScanResult: true,
+            maxScansPerSecond: 8,
+            onDecodeError: (error) => {
+              if (error instanceof Error && error.message === QrScanner.NO_QR_CODE_FOUND) {
+                return
+              }
+              console.error("QR detection failed:", error)
+            },
+          },
+        )
+
+        if (cancelled) {
+          scanner.destroy()
+          return
+        }
+
+        scannerRef.current = scanner
+        await scanner.start()
+
+        setSupported(true)
         setStatus("QR コードを枠の中に入れてください。読み取ったら自動で移動します。")
-        beginDetection(new detectorConstructor())
       } catch (error) {
         console.error("Failed to start QR scanner:", error)
+        setSupported(false)
         setStatus("カメラを起動できませんでした。ブラウザのカメラ権限を確認してください。")
       } finally {
         if (!cancelled) {
@@ -128,68 +124,14 @@ export default function TeamQrScanner() {
       cancelled = true
       stopScanner()
     }
-  }, [open, detectorConstructor])
+  }, [open, router])
 
   const stopScanner = () => {
-    if (frameRef.current) {
-      cancelAnimationFrame(frameRef.current)
-      frameRef.current = null
+    if (scannerRef.current) {
+      scannerRef.current.stop()
+      scannerRef.current.destroy()
+      scannerRef.current = null
     }
-
-    scanningRef.current = false
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop())
-      streamRef.current = null
-    }
-
-    const video = videoRef.current
-    if (video) {
-      video.pause()
-      video.srcObject = null
-    }
-  }
-
-  const beginDetection = (detector: BarcodeDetectorInstance) => {
-    const loop = async () => {
-      const video = videoRef.current
-      if (!video || video.readyState < 2) {
-        frameRef.current = requestAnimationFrame(() => {
-          void loop()
-        })
-        return
-      }
-
-      if (!scanningRef.current) {
-        scanningRef.current = true
-        try {
-          const barcodes = await detector.detect(video)
-          const matched = barcodes
-            .map((barcode) => barcode.rawValue || "")
-            .map((rawValue) => resolveCheckpointPath(rawValue))
-            .find(Boolean)
-
-          if (matched) {
-            stopScanner()
-            setOpen(false)
-            router.push(matched)
-            return
-          }
-        } catch (error) {
-          console.error("QR detection failed:", error)
-        } finally {
-          scanningRef.current = false
-        }
-      }
-
-      frameRef.current = requestAnimationFrame(() => {
-        void loop()
-      })
-    }
-
-    frameRef.current = requestAnimationFrame(() => {
-      void loop()
-    })
   }
 
   return (
@@ -218,7 +160,7 @@ export default function TeamQrScanner() {
 
           <div className="space-y-4">
             <div className="overflow-hidden rounded-2xl border bg-zinc-950">
-              {supported ? (
+              {supported !== false ? (
                 <div className="relative aspect-[3/4] w-full bg-black">
                   <video ref={videoRef} className="h-full w-full object-cover" playsInline muted autoPlay />
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
