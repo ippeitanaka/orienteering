@@ -247,6 +247,7 @@ export default function Dashboard() {
               variant="ghost"
               className="h-10 min-w-10 text-foreground hover:bg-accent hover:text-accent-foreground rounded-sm"
               label="ホーム"
+              href="/"
             />
           </div>
         </div>
