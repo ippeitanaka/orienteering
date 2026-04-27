@@ -17,6 +17,7 @@ import dynamic from "next/dynamic"
 import SimpleFallbackMap from "@/components/simple-fallback-map"
 import CountdownTimer from "@/components/countdown-timer"
 import ThemeToggle from "@/components/theme-toggle"
+import TeamQrScanner from "@/components/team-qr-scanner"
 import { calculateDistanceMeters, formatDistance } from "@/lib/utils"
 
 // BasicMapをクライアントサイドのみで読み込む
@@ -274,20 +275,23 @@ export default function Dashboard() {
                 ></div>
                 <h2 className="text-lg sm:text-xl font-heading leading-tight break-words">{selectedTeam.name}</h2>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-sm border-border/50 hover:bg-accent flex items-center justify-center gap-2 w-full sm:w-auto min-h-11"
-                onClick={() => {
-                  setSelectedTeam(null)
-                  if (typeof window !== "undefined") {
-                    localStorage.removeItem("teamId")
-                  }
-                }}
-              >
-                <Users className="h-4 w-4" />
-                チーム変更
-              </Button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <TeamQrScanner />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-sm border-border/50 hover:bg-accent flex items-center justify-center gap-2 w-full sm:w-auto min-h-11"
+                  onClick={() => {
+                    setSelectedTeam(null)
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("teamId")
+                    }
+                  }}
+                >
+                  <Users className="h-4 w-4" />
+                  チーム変更
+                </Button>
+              </div>
             </div>
 
             {/* カウントダウンタイマーを追加 */}

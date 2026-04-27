@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -26,8 +26,10 @@ export default function CheckpointCheckinPanel({
   alreadyCheckedIn,
 }: CheckpointCheckinPanelProps) {
   const isFinishCheckpoint = checkpointId === 1
+  const [currentTeam, setCurrentTeam] = useState(team)
   const [checkedIn, setCheckedIn] = useState(alreadyCheckedIn)
   const [loading, setLoading] = useState(false)
+  const [restoringSession, setRestoringSession] = useState(false)
   const [result, setResult] = useState<{ type: "success" | "error" | "info"; message: string } | null>(
     alreadyCheckedIn
       ? {
@@ -39,6 +41,71 @@ export default function CheckpointCheckinPanel({
   const [teamScore, setTeamScore] = useState(team?.totalScore ?? 0)
 
   const loginHref = useMemo(() => `/team-login?redirect=${encodeURIComponent(`/checkpoint/${token}`)}`, [token])
+
+  useEffect(() => {
+    setCurrentTeam(team)
+    setTeamScore(team?.totalScore ?? 0)
+  }, [team])
+
+  useEffect(() => {
+    if (currentTeam || typeof window === "undefined") {
+      return
+    }
+
+    const savedTeamCode = localStorage.getItem("teamCode")
+    const savedDeviceId = localStorage.getItem("teamAuthDeviceId")
+
+    if (!savedTeamCode) {
+      return
+    }
+
+    let cancelled = false
+
+    const restoreSession = async () => {
+      try {
+        setRestoringSession(true)
+
+        const response = await fetch("/api/teams/auth", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ team_code: savedTeamCode, deviceId: savedDeviceId }),
+        })
+
+        const data = await response.json()
+        if (!response.ok || cancelled || !data?.team) {
+          return
+        }
+
+        localStorage.setItem("teamId", String(data.team.id))
+        localStorage.setItem("teamName", data.team.name)
+        localStorage.setItem("teamCode", data.team.team_code || savedTeamCode)
+        if (savedDeviceId) {
+          localStorage.setItem("teamAuthDeviceId", savedDeviceId)
+        }
+
+        setCurrentTeam({
+          id: data.team.id,
+          name: data.team.name,
+          totalScore: data.team.total_score ?? 0,
+        })
+        setTeamScore(data.team.total_score ?? 0)
+      } catch (error) {
+        console.error("Failed to restore team session on checkpoint page:", error)
+      } finally {
+        if (!cancelled) {
+          setRestoringSession(false)
+        }
+      }
+    }
+
+    void restoreSession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentTeam])
 
   const handleCheckin = async () => {
     setLoading(true)
@@ -54,6 +121,12 @@ export default function CheckpointCheckinPanel({
       })
 
       const data = await response.json()
+
+      if (response.status === 401) {
+        setCurrentTeam(null)
+        setResult({ type: "error", message: data.error || "チームログインが確認できませんでした。再度お試しください。" })
+        return
+      }
 
       if (response.status === 409) {
         setCheckedIn(true)
@@ -112,21 +185,27 @@ export default function CheckpointCheckinPanel({
           </div>
         </div>
 
-        {!team ? (
+        {!currentTeam ? (
           <Alert variant="warning">
             <LogIn className="h-4 w-4" />
-            <AlertTitle>チームログインが必要です</AlertTitle>
+            <AlertTitle>{restoringSession ? "ログイン状態を確認中です" : "チームログインが必要です"}</AlertTitle>
             <AlertDescription>
-              <p>チェックインするには、先にチームアカウントでログインしてください。</p>
-              <p className="mt-2 text-sm">
-                未ログインのスマホで QR を読み取った場合も、このチェックポイント画面は開きますが、その時点ではポイントは加算されません。
-              </p>
-              <p className="mt-2 text-sm">
-                下のボタンからログインすると、このチェックポイントページに戻ってそのままチェックインできます。
-              </p>
+              {restoringSession ? (
+                <p>この端末のチームログイン情報を確認しています。数秒待っても切り替わらない場合は、下のボタンから再ログインしてください。</p>
+              ) : (
+                <>
+                  <p>チェックインするには、先にチームアカウントでログインしてください。</p>
+                  <p className="mt-2 text-sm">
+                    未ログインのスマホで QR を読み取った場合も、このチェックポイント画面は開きますが、その時点ではポイントは加算されません。
+                  </p>
+                  <p className="mt-2 text-sm">
+                    下のボタンからログインすると、このチェックポイントページに戻ってそのままチェックインできます。
+                  </p>
+                </>
+              )}
               <div className="mt-3">
                 <Link href={loginHref}>
-                  <Button className="gap-2">
+                  <Button className="gap-2" disabled={restoringSession}>
                     <LogIn className="h-4 w-4" />
                     チームログインへ
                   </Button>
@@ -138,7 +217,7 @@ export default function CheckpointCheckinPanel({
           <>
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
               <p className="text-sm text-zinc-600">現在ログイン中のチーム</p>
-              <p className="mt-2 text-2xl font-bold">{team.name}</p>
+              <p className="mt-2 text-2xl font-bold">{currentTeam.name}</p>
             </div>
 
             {result ? (
