@@ -30,7 +30,13 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "ELT学外オリエンテーション",
   description: "東洋医療専門学校　救急救命士学科のオリエンテーリングアプリ",
-    generator: 'v0.dev'
+  generator: "v0.dev",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/app-icon.png", sizes: "1254x1254", type: "image/png" }],
+    apple: [{ url: "/app-icon.png", sizes: "1254x1254", type: "image/png" }],
+    shortcut: ["/app-icon.png"],
+  },
 }
 
 export default function RootLayout({
